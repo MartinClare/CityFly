@@ -74,6 +74,7 @@ export default function HomePage() {
               <span className="hl-body">
                 <span className="hl-pillar">{s.pillar_label}</span>
                 <span className="hl-title">{s.headline}</span>
+                {s.dek ? <span className="hl-dek">{s.dek}</span> : null}
               </span>
             </Link>
           ))}

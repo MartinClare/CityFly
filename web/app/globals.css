@@ -322,6 +322,16 @@ img {
   line-height: 1.3;
 }
 
+.hl-dek {
+  color: var(--ink-muted);
+  font-size: 0.95rem;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .section-label {
   color: var(--accent);
   font-size: 0.78rem;
