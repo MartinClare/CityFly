@@ -48,7 +48,7 @@ export default async function PillarPage({ params }: Props) {
       </div>
 
       {lead ? (
-        <section className="hero" aria-label={`${label} 頭條`}>
+        <section className="hero pillar-hero" aria-label={`${label} 頭條`}>
           {lead.hero ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={lead.hero} alt="" className="hero-img" />
@@ -72,21 +72,26 @@ export default async function PillarPage({ params }: Props) {
       )}
 
       {focus.length > 0 ? (
-        <section className="headline-strip" aria-label={`${label} 焦點`}>
+        <section className="pillar-features" aria-label={`${label} 焦點`}>
           {focus.map((s) => (
-            <Link key={s.slug} className="hl" href={`/stories/${s.slug}`}>
+            <Link key={s.slug} className="pillar-feature" href={`/stories/${s.slug}`}>
               {s.hero ? (
-                <span className="hl-thumb">
+                <span className="pillar-feature-media">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={s.hero} alt="" />
                 </span>
               ) : (
-                <span className="hl-thumb hl-thumb--empty" />
+                <span className="pillar-feature-media pillar-feature-media--empty" />
               )}
-              <span className="hl-body">
-                <span className="hl-pillar">{formatEditionDate(s.as_of)}</span>
-                <span className="hl-title">{s.headline}</span>
-                {s.dek ? <span className="hl-dek">{s.dek}</span> : null}
+              <span className="pillar-feature-copy">
+                <span className="pillar-feature-date">
+                  {formatEditionDate(s.as_of)}
+                </span>
+                <span className="pillar-feature-title">{s.headline}</span>
+                {s.dek ? (
+                  <span className="pillar-feature-dek">{s.dek}</span>
+                ) : null}
+                <span className="pillar-feature-cta">讀全文 →</span>
               </span>
             </Link>
           ))}
