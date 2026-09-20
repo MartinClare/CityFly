@@ -37,107 +37,124 @@ export default function HomePage() {
         <Link href={`/edition/${edition.date}`}>完整今日版 →</Link>
       </div>
 
-      {allToday.length > 0 ? (
-        <nav className="today-toc" aria-label="今日目錄">
-          <div className="section-label">今日目錄</div>
-          <ol>
-            {allToday.map((s, i) => (
-              <li key={s.slug}>
-                <Link href={`/stories/${s.slug}`}>
-                  <span className="toc-num">{String(i + 1).padStart(2, "0")}</span>
-                  <span className="toc-pillar">{s.pillar_label}</span>
-                  <span className="toc-title">{s.headline}</span>
-                </Link>
-              </li>
-            ))}
-          </ol>
-        </nav>
-      ) : null}
-
       {a1 ? (
-        <section className="a1-section" aria-label="A1 頭條">
-          <Link href={`/stories/${a1.slug}`} className="a1-block">
-            {a1.hero ? (
-              <div className="a1-media">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={a1.hero} alt="" />
-              </div>
-            ) : null}
-            <div className="a1-copy">
-              <div className="kicker">A1 頭條 · {a1.pillar_label}</div>
+        <section className="hero" aria-label="A1 頭條">
+          {a1.hero ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={a1.hero} alt="" className="hero-img" />
+          ) : (
+            <div className="hero-img hero-img--empty" />
+          )}
+          <div className="hero-vignette" />
+          <div className="hero-inner">
+            <Link href={`/stories/${a1.slug}`} className="hero-copy">
+              <span className="hero-kicker">A1 頭條 · {a1.pillar_label}</span>
               <h1>{a1.headline}</h1>
-              <p className="dek">{a1.dek}</p>
-              <span className="read-cta">讀全文 →</span>
-            </div>
-          </Link>
+              <p className="hero-dek">{a1.dek}</p>
+              <span className="hero-cta">讀全文 →</span>
+            </Link>
+          </div>
         </section>
       ) : (
         <p className="empty-day">今日尚未有通過稿件。</p>
       )}
 
       {a2.length > 0 ? (
-        <section className="a2" aria-label="今日焦點">
-          <div className="section-label">今日焦點</div>
-          <div className="a2-grid">
-            {a2.map((s) => (
-              <Link key={s.slug} href={`/stories/${s.slug}`} className="a2-card">
-                {s.hero ? (
-                  <div className="a2-thumb">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={s.hero} alt="" />
-                  </div>
-                ) : null}
-                <div className="pillar">{s.pillar_label}</div>
-                <h2>{s.headline}</h2>
-                <p>{s.dek}</p>
-              </Link>
-            ))}
-          </div>
+        <section className="headline-strip" aria-label="今日焦點">
+          {a2.map((s) => (
+            <Link key={s.slug} className="hl" href={`/stories/${s.slug}`}>
+              {s.hero ? (
+                <span className="hl-thumb">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={s.hero} alt="" />
+                </span>
+              ) : (
+                <span className="hl-thumb hl-thumb--empty" />
+              )}
+              <span className="hl-body">
+                <span className="hl-pillar">{s.pillar_label}</span>
+                <span className="hl-title">{s.headline}</span>
+              </span>
+            </Link>
+          ))}
         </section>
       ) : null}
 
-      {inside.length > 0 ? (
-        <section className="inside" aria-label="分類">
-          <div className="section-label">今日分類</div>
-          <div className="inside-grid">
-            {inside.map((rail) => (
+      <section className="body-grid">
+        <div className="body-main">
+          {inside.map((rail) => {
+            const lead = rail.items[0];
+            const rest = rail.items.slice(1);
+            return (
               <div key={rail.pillar} className="rail-block">
-                <h2>
+                <h2 className="rail-head">
                   <Link href={`/p/${rail.pillar}`}>{rail.label}</Link>
                 </h2>
-                <ul>
-                  {rail.items.map((s) => (
-                    <li key={s.slug}>
-                      <Link
-                        href={`/stories/${s.slug}`}
-                        className={s.hero ? "rail-row" : "rail-row rail-row--text"}
-                      >
-                        {s.hero ? (
-                          <span className="rail-thumb">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={s.hero} alt="" />
-                          </span>
-                        ) : null}
-                        <span className="rail-text">{s.headline}</span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+                {lead ? (
+                  <Link className="rail-lead" href={`/stories/${lead.slug}`}>
+                    {lead.hero ? (
+                      <span className="rail-lead-thumb">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={lead.hero} alt="" />
+                      </span>
+                    ) : null}
+                    <span className="rail-lead-body">
+                      <span className="rail-lead-title">{lead.headline}</span>
+                      <span className="rail-lead-dek">{lead.dek}</span>
+                    </span>
+                  </Link>
+                ) : null}
+                {rest.length > 0 ? (
+                  <ul className="rail-list">
+                    {rest.map((s) => (
+                      <li key={s.slug}>
+                        <Link href={`/stories/${s.slug}`}>
+                          <span className="rail-bullet">·</span>
+                          {s.headline}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
               </div>
-            ))}
+            );
+          })}
+        </div>
+
+        <aside className="toc-side">
+          <div className="toc-card">
+            <div className="section-label">
+              今日目錄 · {allToday.length} 篇
+            </div>
+            <ol>
+              {allToday.map((s, i) => (
+                <li key={s.slug}>
+                  <Link href={`/stories/${s.slug}`}>
+                    <span className="toc-num">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span className="toc-pillar">{s.pillar_label}</span>
+                    <span className="toc-title">{s.headline}</span>
+                  </Link>
+                </li>
+              ))}
+            </ol>
+            <Link className="toc-full" href={`/edition/${edition.date}`}>
+              完整今日版 →
+            </Link>
           </div>
-        </section>
-      ) : null}
+        </aside>
+      </section>
 
       {more.length > 0 ? (
-        <section className="more">
+        <section className="more-grid">
           <div className="section-label">今日更多</div>
-          <ul className="more-list">
+          <ul>
             {more.map((s) => (
               <li key={s.slug}>
                 <Link href={`/stories/${s.slug}`}>
                   <span className="more-pillar">{s.pillar_label}</span>
-                  <span>{s.headline}</span>
+                  <span className="more-title">{s.headline}</span>
                 </Link>
               </li>
             ))}
