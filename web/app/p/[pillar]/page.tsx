@@ -6,6 +6,7 @@ import {
   formatEditionDate,
   PILLAR_ORDER,
   stories,
+  storyTeaser,
 } from "@/lib/content";
 
 type Props = { params: Promise<{ pillar: string }> };
@@ -62,7 +63,7 @@ export default async function PillarPage({ params }: Props) {
                 {label} · {formatEditionDate(lead.as_of)}
               </span>
               <h1>{lead.headline}</h1>
-              {lead.dek ? <p className="hero-dek">{lead.dek}</p> : null}
+              <p className="hero-dek">{storyTeaser(lead, 100)}</p>
               <span className="hero-cta">讀全文 →</span>
             </Link>
           </div>
@@ -88,9 +89,7 @@ export default async function PillarPage({ params }: Props) {
                   {formatEditionDate(s.as_of)}
                 </span>
                 <span className="pillar-feature-title">{s.headline}</span>
-                {s.dek ? (
-                  <span className="pillar-feature-dek">{s.dek}</span>
-                ) : null}
+                <span className="pillar-feature-dek">{storyTeaser(s, 120)}</span>
                 <span className="pillar-feature-cta">讀全文 →</span>
               </span>
             </Link>
@@ -117,9 +116,7 @@ export default async function PillarPage({ params }: Props) {
                     {formatEditionDate(s.as_of)}
                   </span>
                   <span className="pillar-card-title">{s.headline}</span>
-                  {s.dek ? (
-                    <span className="pillar-card-dek">{s.dek}</span>
-                  ) : null}
+                  <span className="pillar-card-dek">{storyTeaser(s, 90)}</span>
                 </span>
               </Link>
             ))}

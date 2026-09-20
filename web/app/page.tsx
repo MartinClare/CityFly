@@ -3,6 +3,7 @@ import {
   edition,
   formatEditionDate,
   storiesForEdition,
+  storyTeaser,
   type Story,
 } from "@/lib/content";
 
@@ -50,7 +51,7 @@ export default function HomePage() {
             <Link href={`/stories/${a1.slug}`} className="hero-copy">
               <span className="hero-kicker">A1 頭條 · {a1.pillar_label}</span>
               <h1>{a1.headline}</h1>
-              <p className="hero-dek">{a1.dek}</p>
+              <p className="hero-dek">{storyTeaser(a1, 90)}</p>
               <span className="hero-cta">讀全文 →</span>
             </Link>
           </div>
@@ -74,7 +75,7 @@ export default function HomePage() {
               <span className="hl-body">
                 <span className="hl-pillar">{s.pillar_label}</span>
                 <span className="hl-title">{s.headline}</span>
-                {s.dek ? <span className="hl-dek">{s.dek}</span> : null}
+                <span className="hl-dek">{storyTeaser(s, 80)}</span>
               </span>
             </Link>
           ))}
@@ -101,7 +102,7 @@ export default function HomePage() {
                     ) : null}
                     <span className="rail-lead-body">
                       <span className="rail-lead-title">{lead.headline}</span>
-                      <span className="rail-lead-dek">{lead.dek}</span>
+                      <span className="rail-lead-dek">{storyTeaser(lead, 70)}</span>
                     </span>
                   </Link>
                 ) : null}

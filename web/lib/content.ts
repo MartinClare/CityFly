@@ -75,3 +75,35 @@ export function formatEditionDate(iso: string): string {
   if (!y || !m || !d) return iso;
   return `${y}年${m}月${d}日`;
 }
+
+/** Longer article teaser from body (dek alone is often one short line). */
+export function storyTeaser(story: Story, maxCjk = 110): string {
+  const raw = story.body_md || "";
+  let text = raw.replace(/<!--[\s\S]*?-->/g, "");
+  text = text.replace(/^#+\s+.+$/gm, "");
+  text = text.replace(/!\[[^\]]*\]\([^)]*\)/g, "");
+  text = text.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1");
+  text = text.replace(/[*_`>#]/g, "");
+
+  const paras = text
+    .split(/\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .filter((p) => p !== story.headline && p !== story.dek && !p.startsWith("來源"));
+
+  let out = "";
+  let cjk = 0;
+  for (const p of paras) {
+    for (const ch of p) {
+      out += ch;
+      if (/[\u4e00-\u9fff]/.test(ch)) cjk += 1;
+      if (cjk >= maxCjk) {
+        return out.replace(/\s+$/u, "") + "……";
+      }
+    }
+  }
+
+  const trimmed = out.trim();
+  if (trimmed.length >= 20) return trimmed;
+  return (story.dek || "").trim();
+}
