@@ -1,0 +1,335 @@
+topic: hk_city
+display_name: Hong Kong City-Change Magazine
+timezone: Asia/Hong_Kong
+report_language: zh-HK
+news_limit: 160
+max_article_drafts: 12
+ledger_lookback_days: 45
+
+pillars:
+  - id: property
+    label: 樓市與生活
+  - id: city
+    label: 城市大變身
+  - id: mobility
+    label: 基建與交通
+  - id: economy
+    label: 經濟、錢與機會
+  - id: tech
+    label: 科技改變生活
+
+collectors:
+  gov_news:
+    limit: 50
+    feeds:
+      - name: GIS 新聞公報
+        url: https://www.info.gov.hk/gia/general/today.htm
+        kind: html
+        tier: 1
+        policy: public_page_extract_allowed
+      - name: GovHK 新聞（中文）
+        url: https://www.news.gov.hk/chi/index.html
+        kind: html
+        tier: 1
+        policy: public_page_extract_allowed
+
+  city_projects:
+    limit: 55
+    feeds:
+      - name: 發展局新聞稿
+        url: https://www.devb.gov.hk/tc/publications_and_press_releases/press/index.html
+        kind: html
+        tier: 1
+        policy: public_page_extract_allowed
+      - name: 土木工程拓展署項目
+        url: https://www.cedd.gov.hk/tc/our-projects/index.html
+        kind: html
+        tier: 1
+        policy: public_page_extract_allowed
+      - name: 北部都會區最新消息
+        url: https://www.nm.gov.hk/tc/trending-in-nm/latest-news
+        kind: html
+        tier: 1
+        policy: public_page_extract_allowed
+      - name: 規劃署
+        url: https://www.pland.gov.hk/pland_tc/index.html
+        kind: html
+        tier: 1
+        policy: public_page_extract_allowed
+      - name: 城市規劃委員會
+        url: https://www.tpb.gov.hk/tc/
+        kind: html
+        tier: 1
+        policy: public_page_extract_allowed
+      - name: 地政總署賣地
+        url: https://www.landsd.gov.hk/en/landsale/land-sale-information.html
+        kind: html
+        tier: 1
+        policy: public_page_extract_allowed
+      - name: 市建局新聞稿
+        url: https://www.ura.org.hk/tc/news-centre/press-releases
+        kind: html
+        tier: 2
+        policy: public_page_extract_allowed
+      - name: 市建局重建
+        url: https://www.ura.org.hk/tc/project/redevelopment
+        kind: html
+        tier: 2
+        policy: public_page_extract_allowed
+      - name: 創新科技及工業局
+        url: https://www.itib.gov.hk/en/index.html
+        kind: html
+        tier: 1
+        policy: public_page_extract_allowed
+      - name: 西九文化區新聞
+        url: https://www.westkowloon.hk/en/newsroom
+        kind: html
+        tier: 2
+        policy: public_page_extract_allowed
+      - name: 起動九龍東
+        url: https://www.ekeo.gov.hk/en/news/index.html
+        kind: html
+        tier: 1
+        policy: public_page_extract_allowed
+      - name: 立法會發展事務委員會
+        url: https://www.legco.gov.hk/tc/about-legco/committees/panels/dev.html
+        kind: html
+        tier: 1
+        policy: sitemap_only
+
+  living_housing:
+    limit: 35
+    feeds:
+      - name: 房屋委員會
+        url: https://www.housingauthority.gov.hk/tc/about-us/news-centre/index.html
+        kind: html
+        tier: 1
+        policy: public_page_extract_allowed
+      - name: 房屋署刊物與統計
+        url: https://www.housingauthority.gov.hk/tc/about-us/publications-and-statistics/index.html
+        kind: html
+        tier: 1
+        policy: public_page_extract_allowed
+      - name: 土地註冊處每月統計
+        url: https://www.landreg.gov.hk/tc/monthly/monthly.htm
+        kind: html
+        tier: 1
+        policy: public_page_extract_allowed
+
+  mobility:
+    limit: 45
+    feeds:
+      - name: 路政署新聞稿
+        url: https://www.hyd.gov.hk/tc/information_corner/press_releases/index.html
+        kind: html
+        tier: 1
+        policy: public_page_extract_allowed
+      - name: 港鐵新聞稿
+        url: https://www.mtr.com.hk/ch/corporate/consultancy/press_release.html
+        kind: html
+        tier: 2
+        policy: public_page_extract_allowed
+      - name: 港鐵項目
+        url: https://www.mtr.com.hk/ch/corporate/projects/projects.html
+        kind: html
+        tier: 2
+        policy: public_page_extract_allowed
+      - name: 機場管理局傳媒中心
+        url: https://www.hongkongairport.com/chi/media-centre/index.page
+        kind: html
+        tier: 2
+        policy: public_page_extract_allowed
+      - name: 運輸及物流局新聞稿
+        url: https://www.tlb.gov.hk/eng/pressreleases/transport/index.html
+        kind: html
+        tier: 1
+        policy: public_page_extract_allowed
+      - name: 運輸署運輸數字
+        url: https://www.td.gov.hk/tc/transport_in_hong_kong/transport_figures/index.html
+        kind: html
+        tier: 1
+        policy: public_page_extract_allowed
+      - name: 香港物流新聞
+        url: https://www.logisticshk.gov.hk/en/information/news/index.html
+        kind: html
+        tier: 1
+        policy: public_page_extract_allowed
+
+  city_macro:
+    limit: 50
+    feeds:
+      - name: 政府統計處新聞稿
+        url: https://www.censtatd.gov.hk/en/press_release.html
+        kind: html
+        tier: 1
+        policy: public_page_extract_allowed
+      - name: 金管局新聞稿
+        url: https://www.hkma.gov.hk/chi/news-and-media/press-releases/
+        kind: html
+        tier: 1
+        policy: public_page_extract_allowed
+      - name: 香港旅發局新聞
+        url: https://www.discoverhongkong.com/eng/about-hktb/news.html
+        kind: html
+        tier: 2
+        policy: public_page_extract_allowed
+      - name: 政制及內地事務局新聞
+        url: https://www.cmab.gov.hk/tc/press/index.htm
+        kind: html
+        tier: 1
+        policy: public_page_extract_allowed
+      - name: 粵港澳大灣區門戶
+        url: https://www.bayarea.gov.hk/tc/home/index.html
+        kind: html
+        tier: 1
+        policy: public_page_extract_allowed
+      - name: 投資推廣署新聞
+        url: https://www.investhk.gov.hk/zh-hk/news.html
+        kind: html
+        tier: 2
+        policy: public_page_extract_allowed
+
+  local_news:
+    limit: 100
+    feeds:
+      - name: 港台新聞
+        url: https://rthk.hk/rthk/news/rss/c_expressnews_clocal.xml
+        kind: rss
+        tier: 3
+        policy: rss_only
+      - name: 港台財經
+        url: https://rthk.hk/rthk/news/rss/c_expressnews_cfinance.xml
+        kind: rss
+        tier: 3
+        policy: rss_only
+      - name: 明報港聞
+        url: https://news.mingpao.com/rss/pns/s00002.xml
+        kind: rss
+        tier: 3
+        policy: rss_only
+      - name: 明報即時
+        url: https://news.mingpao.com/rss/ins/s00001.xml
+        kind: rss
+        tier: 3
+        policy: rss_only
+      - name: 明報經濟
+        url: https://news.mingpao.com/rss/pns/s00004.xml
+        kind: rss
+        tier: 3
+        policy: rss_only
+      - name: SCMP Hong Kong
+        url: https://www.scmp.com/rss/2/feed
+        kind: rss
+        tier: 3
+        policy: rss_only
+      - name: Hong Kong Free Press
+        url: https://hongkongfp.com/feed/
+        kind: rss
+        tier: 3
+        policy: rss_only
+
+  consultancy:
+    limit: 80
+    feeds:
+      - name: 中原地產指數
+        url: https://hk.centanet.com/info/
+        kind: html
+        tier: 4
+        policy: metadata_only
+      - name: 美聯屋苑成交
+        url: https://www.midland.com.hk/zh-hk/research/
+        kind: html
+        tier: 4
+        policy: metadata_only
+      - name: Building.hk eBulletin
+        url: https://www.building.hk/eBulletin.asp
+        kind: html
+        tier: 4
+        policy: public_page_extract_allowed
+      - name: CBRE Hong Kong Insights
+        url: https://www.cbre.com.hk/insights
+        kind: html
+        tier: 4
+        policy: metadata_only
+      - name: JLL Hong Kong Insights
+        url: https://www.jll.com/en-hk/insights
+        kind: html
+        tier: 4
+        policy: metadata_only
+      - name: Knight Frank Research
+        url: https://www.knightfrank.com.hk/research
+        kind: html
+        tier: 4
+        policy: metadata_only
+      - name: Cushman Hong Kong Research
+        url: https://www.cushmanwakefield.com/en/greater-china/insights/hong-kong-office-retail-residential-investment-market-report
+        kind: html
+        tier: 4
+        policy: metadata_only
+
+  tech_local:
+    limit: 50
+    feeds:
+      - name: 數字政策辦公室
+        url: https://www.digitalpolicy.gov.hk/tc/
+        kind: html
+        tier: 1
+        policy: public_page_extract_allowed
+      - name: 數碼港新聞
+        url: https://www.cyberport.hk/en/news
+        kind: html
+        tier: 2
+        policy: public_page_extract_allowed
+      - name: 科學園新聞
+        url: https://www.hkstp.org/en/news
+        kind: html
+        tier: 2
+        policy: public_page_extract_allowed
+      - name: 生產力促進局傳媒
+        url: https://www.hkpc.org/zh-HK/about-us/media-centre
+        kind: html
+        tier: 2
+        policy: public_page_extract_allowed
+      - name: 建造業議會新聞
+        url: https://www.cic.hk/chi/news-centre
+        kind: html
+        tier: 2
+        policy: public_page_extract_allowed
+      - name: Unwire.hk
+        url: https://feeds.feedburner.com/unwirelife/
+        kind: rss
+        tier: 3
+        policy: public_page_extract_allowed
+      - name: Unwire Pro
+        url: https://www.unwire.pro/feed/
+        kind: rss
+        tier: 3
+        policy: public_page_extract_allowed
+      - name: Google AI Blog
+        url: https://blog.google/technology/ai/rss/
+        kind: rss
+        tier: 2
+        policy: rss_only
+
+  property_data:
+    series:
+      - name: RVD 私人住宅平均售價（每月）
+        url: https://www.rvd.gov.hk/doc/en/statistics/his_data_4.xls
+        kind: xls
+        tier: 1
+        policy: official_api
+        unit: HKD/sq m
+      - name: RVD 私人住宅平均租金（每月）
+        url: https://www.rvd.gov.hk/doc/en/statistics/his_data_2.xls
+        kind: xls
+        tier: 1
+        policy: official_api
+        unit: HKD/sq m
+      - name: HKMA 隔夜拆息
+        url: https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily?pagesize=10
+        kind: hkma_json
+        tier: 1
+        policy: official_api
+        value_field: ir_overnight
+        date_field: end_of_day
+        unit: "%"

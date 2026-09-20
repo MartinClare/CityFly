@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block body %}
+<main>
+  <h1>設定</h1>
+  <p class="meta">控制每日收集量、出稿數、題材 pillar。改完下一輪 cron 生效。</p>
+  {% if saved %}<p class="banner ok">設定已儲存。</p>{% endif %}
+  <form method="post" action="/settings" class="panel">
+    <div class="two-col">
+      <div class="field">
+        <label for="news_limit">每日收集上限 (news_limit)</label>
+        <input id="news_limit" type="number" min="20" max="400" name="news_limit" value="{{ settings.news_limit }}">
+      </div>
+      <div class="field">
+        <label for="max_article_drafts">每日出稿數 (max_article_drafts)</label>
+        <input id="max_article_drafts" type="number" min="1" max="60" name="max_article_drafts" value="{{ settings.max_article_drafts }}">
+      </div>
+      <div class="field">
+        <label for="ledger_lookback_days">防重複睇返幾多日</label>
+        <input id="ledger_lookback_days" type="number" min="7" max="120" name="ledger_lookback_days" value="{{ settings.ledger_lookback_days }}">
+      </div>
+    </div>
+    <h2>題材 pillar</h2>
+    {% for p in pillars %}
+    <label class="check">
+      <input type="checkbox" name="pillar_{{ p.id }}" {% if p.enabled %}checked{% endif %}>
+      {{ p.label }} <span class="meta">({{ p.id }})</span>
+    </label>
+    {% endfor %}
+    <p style="margin-top:18px"><button type="submit">儲存設定</button></p>
+  </form>
+  <h2>機器人狀態</h2>
+  <pre class="health">{{ health }}</pre>
+</main>
+{% endblock %}

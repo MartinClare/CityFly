@@ -1,0 +1,16 @@
+---
+description: City Sight review portal login — read from .env, never ask Alex
+alwaysApply: true
+---
+
+# Review portal login
+
+When Alex asks for the portal URL, username, or password:
+
+- URL: `https://desk.citysight.net` (login at `/login`; `www` may still work until cutover)
+- Username is always `editor`
+- Password is `DESK_PASSWORD` in `robot/.env` (Hong Kong copy: `/opt/cityfly-robot/.env`)
+- Desk app: FastAPI at `robot/hk_city/desk/` — articles, sources, settings, regen, delete
+- Caddy: HTTPS for `desk.citysight.net` (and `www.citysight.net` until magazine cutover) → `127.0.0.1:8787`
+- Read `robot/.env` and give him the current password. Do not ask him to recall it.
+- Never commit `.env` or put the live password in git-tracked files.

@@ -1,0 +1,2 @@
+# 07:30 every day (HKT if the Mac timezone is Hong Kong)
+30 7 * * * cd "/Users/alex/Documents/City Fly" && "/Users/alex/Documents/City Fly/venv/bin/python" run_daily.py hk_city >> "/Users/alex/Documents/City Fly/hk_city/data/cron.log" 2>&1

@@ -1,0 +1,16 @@
+[Unit]
+Description=City Fly review portal
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/cityfly-robot
+Environment=DESK_BIND=0.0.0.0
+Environment=DESK_PORT=8787
+EnvironmentFile=/opt/cityfly-robot/.env
+ExecStart=/opt/cityfly-robot/venv/bin/python /opt/cityfly-robot/scripts/desk.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

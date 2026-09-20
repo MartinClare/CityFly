@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block body %}
+<main>
+  <h1>{{ day or "稿件" }}</h1>
+  <p class="meta">只改狀態，唔會自動上 Facebook 或公開網站。700–1000 字先算達標。</p>
+  <form class="filters" method="get" action="/">
+    <div class="field">
+      <label for="day">日期</label>
+      <select id="day" name="day" onchange="this.form.submit()">
+        {% for d in days %}
+        <option value="{{ d }}" {% if d==day %}selected{% endif %}>{{ d }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="status">狀態</label>
+      <select id="status" name="status" onchange="this.form.submit()">
+        {% for key, label in statuses.items() %}
+        <option value="{{ key }}" {% if status==key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+        <option value="all" {% if status=='all' %}selected{% endif %}>全部</option>
+      </select>
+    </div>
+  </form>
+  {% if not rows %}
+  <p>呢欄暫時無稿。</p>
+  {% else %}
+  <div class="grid">
+    {% for row in rows %}
+    <a class="cardlink" href="/a/{{ day }}/{{ row.slug }}?queue={{ status }}">
+      <article class="card">
+        <h2 class="topic">{{ row.title }}</h2>
+        {% if row.dek %}<p class="dek">{{ row.dek[:140] }}</p>{% endif %}
+        {% if row.thumb %}<img src="/images/{{ row.thumb.split('/')[-1] }}" alt="">{% endif %}
+        <p class="meta">
+          <span class="{{ row.band }}">{{ row.cjk }} 字</span>
+          · {% if row.hero %}有圖{% else %}未有圖{% endif %}
+          · {{ statuses.get(row.status, row.status) }}
+          {% if row.pillar %} · {{ row.pillar }}{% endif %}
+        </p>
+      </article>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+</main>
+{% endblock %}

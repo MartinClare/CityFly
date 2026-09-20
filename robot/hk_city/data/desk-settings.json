@@ -1,0 +1,278 @@
+{
+  "news_limit": 160,
+  "max_article_drafts": 30,
+  "ledger_lookback_days": 45,
+  "pillars": {
+    "property": true,
+    "city": true,
+    "mobility": true,
+    "economy": true,
+    "tech": true
+  },
+  "collectors": {
+    "gov_news": {
+      "enabled": true,
+      "limit": 50,
+      "feeds": [
+        {
+          "url": "https://www.info.gov.hk/gia/general/today.htm",
+          "enabled": true
+        },
+        {
+          "url": "https://www.news.gov.hk/chi/index.html",
+          "enabled": true
+        }
+      ],
+      "extra_feeds": []
+    },
+    "city_projects": {
+      "enabled": true,
+      "limit": 55,
+      "feeds": [
+        {
+          "url": "https://www.devb.gov.hk/tc/publications_and_press_releases/press/index.html",
+          "enabled": true
+        },
+        {
+          "url": "https://www.cedd.gov.hk/tc/our-projects/index.html",
+          "enabled": true
+        },
+        {
+          "url": "https://www.nm.gov.hk/tc/trending-in-nm/latest-news",
+          "enabled": true
+        },
+        {
+          "url": "https://www.pland.gov.hk/pland_tc/index.html",
+          "enabled": true
+        },
+        {
+          "url": "https://www.tpb.gov.hk/tc/",
+          "enabled": true
+        },
+        {
+          "url": "https://www.landsd.gov.hk/en/landsale/land-sale-information.html",
+          "enabled": true
+        },
+        {
+          "url": "https://www.ura.org.hk/tc/news-centre/press-releases",
+          "enabled": true
+        },
+        {
+          "url": "https://www.ura.org.hk/tc/project/redevelopment",
+          "enabled": true
+        },
+        {
+          "url": "https://www.itib.gov.hk/en/index.html",
+          "enabled": true
+        },
+        {
+          "url": "https://www.westkowloon.hk/en/newsroom",
+          "enabled": true
+        },
+        {
+          "url": "https://www.ekeo.gov.hk/en/news/index.html",
+          "enabled": true
+        },
+        {
+          "url": "https://www.legco.gov.hk/tc/about-legco/committees/panels/dev.html",
+          "enabled": true
+        }
+      ],
+      "extra_feeds": []
+    },
+    "living_housing": {
+      "enabled": true,
+      "limit": 35,
+      "feeds": [
+        {
+          "url": "https://www.housingauthority.gov.hk/tc/about-us/news-centre/index.html",
+          "enabled": true
+        },
+        {
+          "url": "https://www.housingauthority.gov.hk/tc/about-us/publications-and-statistics/index.html",
+          "enabled": true
+        },
+        {
+          "url": "https://www.landreg.gov.hk/tc/monthly/monthly.htm",
+          "enabled": true
+        }
+      ],
+      "extra_feeds": []
+    },
+    "mobility": {
+      "enabled": true,
+      "limit": 45,
+      "feeds": [
+        {
+          "url": "https://www.hyd.gov.hk/tc/information_corner/press_releases/index.html",
+          "enabled": true
+        },
+        {
+          "url": "https://www.mtr.com.hk/ch/corporate/consultancy/press_release.html",
+          "enabled": true
+        },
+        {
+          "url": "https://www.mtr.com.hk/ch/corporate/projects/projects.html",
+          "enabled": true
+        },
+        {
+          "url": "https://www.hongkongairport.com/chi/media-centre/index.page",
+          "enabled": true
+        },
+        {
+          "url": "https://www.tlb.gov.hk/eng/pressreleases/transport/index.html",
+          "enabled": true
+        },
+        {
+          "url": "https://www.td.gov.hk/tc/transport_in_hong_kong/transport_figures/index.html",
+          "enabled": true
+        },
+        {
+          "url": "https://www.logisticshk.gov.hk/en/information/news/index.html",
+          "enabled": true
+        }
+      ],
+      "extra_feeds": []
+    },
+    "city_macro": {
+      "enabled": true,
+      "limit": 50,
+      "feeds": [
+        {
+          "url": "https://www.censtatd.gov.hk/en/press_release.html",
+          "enabled": true
+        },
+        {
+          "url": "https://www.hkma.gov.hk/chi/news-and-media/press-releases/",
+          "enabled": true
+        },
+        {
+          "url": "https://www.discoverhongkong.com/eng/about-hktb/news.html",
+          "enabled": true
+        },
+        {
+          "url": "https://www.cmab.gov.hk/tc/press/index.htm",
+          "enabled": true
+        },
+        {
+          "url": "https://www.bayarea.gov.hk/tc/home/index.html",
+          "enabled": true
+        },
+        {
+          "url": "https://www.investhk.gov.hk/zh-hk/news.html",
+          "enabled": true
+        }
+      ],
+      "extra_feeds": []
+    },
+    "local_news": {
+      "enabled": true,
+      "limit": 100,
+      "feeds": [
+        {
+          "url": "https://rthk.hk/rthk/news/rss/c_expressnews_clocal.xml",
+          "enabled": true
+        },
+        {
+          "url": "https://rthk.hk/rthk/news/rss/c_expressnews_cfinance.xml",
+          "enabled": true
+        },
+        {
+          "url": "https://news.mingpao.com/rss/pns/s00002.xml",
+          "enabled": true
+        },
+        {
+          "url": "https://news.mingpao.com/rss/ins/s00001.xml",
+          "enabled": true
+        },
+        {
+          "url": "https://news.mingpao.com/rss/pns/s00004.xml",
+          "enabled": true
+        },
+        {
+          "url": "https://www.scmp.com/rss/2/feed",
+          "enabled": true
+        },
+        {
+          "url": "https://hongkongfp.com/feed/",
+          "enabled": true
+        }
+      ],
+      "extra_feeds": []
+    },
+    "consultancy": {
+      "enabled": true,
+      "limit": 80,
+      "feeds": [
+        {
+          "url": "https://hk.centanet.com/info/",
+          "enabled": true
+        },
+        {
+          "url": "https://www.midland.com.hk/zh-hk/research/",
+          "enabled": true
+        },
+        {
+          "url": "https://www.building.hk/eBulletin.asp",
+          "enabled": true
+        },
+        {
+          "url": "https://www.cbre.com.hk/insights",
+          "enabled": true
+        },
+        {
+          "url": "https://www.jll.com/en-hk/insights",
+          "enabled": true
+        },
+        {
+          "url": "https://www.knightfrank.com.hk/research",
+          "enabled": true
+        },
+        {
+          "url": "https://www.cushmanwakefield.com/en/greater-china/insights/hong-kong-office-retail-residential-investment-market-report",
+          "enabled": true
+        }
+      ],
+      "extra_feeds": []
+    },
+    "tech_local": {
+      "enabled": true,
+      "limit": 50,
+      "feeds": [
+        {
+          "url": "https://www.digitalpolicy.gov.hk/tc/",
+          "enabled": true
+        },
+        {
+          "url": "https://www.cyberport.hk/en/news",
+          "enabled": true
+        },
+        {
+          "url": "https://www.hkstp.org/en/news",
+          "enabled": true
+        },
+        {
+          "url": "https://www.hkpc.org/zh-HK/about-us/media-centre",
+          "enabled": true
+        },
+        {
+          "url": "https://www.cic.hk/chi/news-centre",
+          "enabled": true
+        },
+        {
+          "url": "https://feeds.feedburner.com/unwirelife/",
+          "enabled": true
+        },
+        {
+          "url": "https://www.unwire.pro/feed/",
+          "enabled": true
+        },
+        {
+          "url": "https://blog.google/technology/ai/rss/",
+          "enabled": true
+        }
+      ],
+      "extra_feeds": []
+    }
+  }
+}

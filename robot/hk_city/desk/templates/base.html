@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-HK">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {% if refresh %}<meta http-equiv="refresh" content="4">{% endif %}
+  <title>{% block title %}{{ title or "City Fly 審稿" }}{% endblock %}</title>
+  <link rel="stylesheet" href="/static/desk.css">
+</head>
+<body>
+{% if nav %}
+<header class="top">
+  <div>
+    <a href="/"><strong>City Fly 審稿</strong></a>
+    <nav>
+      <a href="/?status=draft_pending_review" class="{% if active=='articles' %}active{% endif %}">稿件</a>
+      <a href="/sources" class="{% if active=='sources' %}active{% endif %}">來源</a>
+      <a href="/settings" class="{% if active=='settings' %}active{% endif %}">設定</a>
+      <a href="/health" class="{% if active=='health' %}active{% endif %}">機器人</a>
+    </nav>
+  </div>
+  <div class="user">
+    <span>{{ user or "editor" }}</span>
+    <form method="post" action="/logout" style="margin:0">
+      <button class="ghost" type="submit" style="padding:6px 10px;font-size:13px">登出</button>
+    </form>
+  </div>
+</header>
+{% endif %}
+{% block body %}{% endblock %}
+</body>
+</html>
