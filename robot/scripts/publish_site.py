@@ -51,20 +51,47 @@ def _body_without_hero(md: str) -> str:
 
 def _resolve_hero(day_dir: Path, meta: dict[str, Any]) -> Path | None:
     hero = meta.get("hero") or {}
-    if not hero.get("ok"):
-        return None
-    raw = hero.get("path") or ""
-    name = Path(str(raw)).name
-    candidates = [
-        day_dir / "images" / name,
-        day_dir / name,
-        Path(raw) if raw else None,
-    ]
-    # After repo split, absolute paths may still point at old hk_city/
-    if raw and "/hk_city/" in str(raw) and "/robot/" not in str(raw):
-        candidates.append(ROOT / "hk_city" / str(raw).split("/hk_city/", 1)[-1])
+    slug = str(meta.get("slug") or "")
+    candidates: list[Path | None] = []
+
+    if hero.get("ok"):
+        raw = hero.get("path") or ""
+        name = Path(str(raw)).name
+        candidates.extend(
+            [
+                day_dir / "images" / name,
+                day_dir / name,
+                Path(raw) if raw else None,
+            ]
+        )
+        # After repo split, absolute paths may still point at old hk_city/
+        if raw and "/hk_city/" in str(raw) and "/robot/" not in str(raw):
+            candidates.append(ROOT / "hk_city" / str(raw).split("/hk_city/", 1)[-1])
+
+    # Fallback: any file named after the slug in images/
+    if slug:
+        images = day_dir / "images"
+        if images.is_dir():
+            for ext in (".jpg", ".jpeg", ".png", ".webp", ".gif"):
+                candidates.append(images / f"{slug}{ext}")
+            candidates.extend(sorted(images.glob(f"{slug}.*")))
+
+    # Markdown ![hero](images/...) reference
+    md_path = day_dir / f"{slug}.md"
+    if md_path.is_file():
+        m = re.search(r"!\[[^\]]*\]\((images/[^)]+)\)", md_path.read_text(encoding="utf-8"))
+        if m:
+            candidates.append(day_dir / m.group(1))
+
+    seen: set[str] = set()
     for c in candidates:
-        if c and c.is_file():
+        if not c:
+            continue
+        key = str(c.resolve()) if c.exists() else str(c)
+        if key in seen:
+            continue
+        seen.add(key)
+        if c.is_file():
             return c
     return None
 
