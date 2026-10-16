@@ -13,6 +13,7 @@ from common import images, llm
 from common.base_reporter import BaseReporter
 from common.config import get_llm_config
 from hk_city import ledger
+from hk_city.article_leak import assemble_article_markdown, looks_like_worksheet, parse_article_json
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +64,18 @@ ARTICLE_SYSTEM = """你是 City Fly 的雜誌撰稿。聲線接近 Bloomberg Cit
 3. 正文 700–1000 字（只計中文字）。Facebook／網頁一篇這個長度。少過 700 字就未完。最多 3 個為此篇新造的小標題
 4. 文末 ## 來源 + 指定免責聲明
 """
+
+ARTICLE_JSON_SYSTEM = (
+    ARTICLE_SYSTEM
+    + """
+
+輸出格式：只回一個 JSON 物件，不要 markdown code fence，不要解釋。
+欄位：
+- "title"：標題文字（不要 #）
+- "dek"：一句副題
+- "body"：正文 markdown（可含 ## 小標；不要重複標題或 dek；不要 ## 來源）
+"""
+)
 
 MIN_ARTICLE_CJK = 700
 MAX_ARTICLE_CJK = 1000
@@ -202,44 +215,53 @@ class CityFlyReporter(BaseReporter):
                     "link": cand.get("link"),
                     "summary": (cand.get("summary") or "")[:800],
                 }
-                user = (
-                    f"寫一篇可以刊登的香港口語繁體雜誌特稿。正文必須 {MIN_ARTICLE_CJK}–{MAX_ARTICLE_CJK} 字"
-                    "（只計中文字，唔計標點同來源）。少過 700 字當未寫完。\n"
-                    f"第一行必須係標題：# {hook}\n"
-                    f"第二段用一句 dek（唔好印「Standfirst」呢個字）：{dek}\n"
-                    "來源 summary 裡每個數字、日期、人名、地名都要用。唔好因為材料短就寫兩段交差。\n"
-                    "只寫下列來源裡有的事。不要虛構。不要解釋你的寫作決定。\n"
-                    f"候選：{json.dumps(slim, ensure_ascii=False)}\n"
-                    f"來源：{json.dumps(sources, ensure_ascii=False)}\n"
-                    f"文末必須加上：{DISCLAIMER}\n"
-                )
-                body = llm.chat(ARTICLE_SYSTEM, user, temperature=0.55, max_tokens=8000)
-                n = _cjk_len(body)
-                if n < MIN_ARTICLE_CJK or _looks_like_worksheet(body):
-                    body = llm.chat(
-                        ARTICLE_SYSTEM,
-                        user + f"\n上一稿得 {n} 字。重寫成雜誌特稿，必須寫滿 {MIN_ARTICLE_CJK} 字。"
-                        "小標題要為此篇新造。來源裡的數字全部寫入正文。\n",
-                        temperature=0.6,
-                        max_tokens=8000,
-                    )
-                    n = _cjk_len(body)
-                    if n < MIN_ARTICLE_CJK or _looks_like_worksheet(body):
-                        body = llm.chat(
-                            ARTICLE_SYSTEM,
-                            user + f"\n上一稿仍然得 {n} 字。再寫一次，正文必須 {MIN_ARTICLE_CJK}–{MAX_ARTICLE_CJK} 字。"
-                            "把來源 summary 拆開寫：人、地、數、決定各寫一段。唔好發明。\n",
-                            temperature=0.65,
-                            max_tokens=8000,
-                        )
-                        n = _cjk_len(body)
-                        if n < MIN_ARTICLE_CJK or n > MAX_ARTICLE_CJK + 80 or _looks_like_worksheet(body):
-                            raise RuntimeError(f"article still short or worksheet ({n} 字)")
+                user = _article_user_prompt(hook, dek, slim, sources)
+                body = self._generate_article_body(user, hook=hook, dek_hint=dek)
                 return f"<!-- model: {model} -->\n\n{body.strip()}\n"
             except Exception as exc:
                 logger.exception("Article LLM failed: %s", exc)
                 raise
         raise RuntimeError("LLM unavailable — will not save a stub")
+
+    def _generate_article_body(self, user: str, *, hook: str, dek_hint: str) -> str:
+        last_n = 0
+        extra = ""
+        for attempt in range(3):
+            temp = 0.55 + attempt * 0.05
+            body = self._call_article_llm(
+                user + extra, temperature=temp, hook=hook, dek_hint=dek_hint
+            )
+            n = _cjk_len(body)
+            last_n = n
+            if (
+                MIN_ARTICLE_CJK <= n <= MAX_ARTICLE_CJK + 80
+                and not looks_like_worksheet(body)
+            ):
+                return body
+            if attempt < 2:
+                extra = (
+                    f"\n上一稿得 {n} 字"
+                    + ("，或含編輯備註" if looks_like_worksheet(body) else "")
+                    + f"。重寫：正文 {MIN_ARTICLE_CJK}–{MAX_ARTICLE_CJK} 字，只寫雜誌稿，不要解釋寫作過程。\n"
+                )
+        raise RuntimeError(f"article still short or worksheet ({last_n} 字)")
+
+    def _call_article_llm(
+        self, user: str, *, temperature: float, hook: str, dek_hint: str
+    ) -> str:
+        try:
+            raw = llm.chat_json(ARTICLE_JSON_SYSTEM, user, temperature=temperature, max_tokens=8000)
+            parsed = parse_article_json(raw)
+            if parsed:
+                title = (parsed.get("title") or hook or "").strip()
+                dek = (parsed.get("dek") or dek_hint or "").strip()
+                body_md = assemble_article_markdown(title, dek, parsed.get("body") or "")
+                if not looks_like_worksheet(body_md):
+                    return body_md
+        except Exception as exc:
+            logger.warning("Article JSON path failed (%s), falling back to markdown", exc)
+        body = llm.chat(ARTICLE_SYSTEM, user, temperature=temperature, max_tokens=8000)
+        return body
 
     def _maybe_hero(self, slug: str, cand: dict[str, Any], body: str) -> dict[str, Any]:
         if self.config.get("skip_images"):
@@ -378,47 +400,20 @@ def _first_heading(markdown: str) -> str:
     return ""
 
 
-_WORKSHEET_HEADS = (
-    "## 現場",
-    "## 機會",
-    "## 機制",
-    "## 誰可以做",
-    "## 變數",
-    "## 窗口",
-    "## 生活會點變",
-    "## 威脅",
-    "## 傳聞",
-    "### 生意",
-    "### 投資觀察",
-    "### 建造",
-    "**Standfirst",
-    "（分析）",
-    "（事實）",
-    "（預測）",
-    "（不確定）",
-    "用户要求",
-    "让我",
-    "讓我仔細",
-    "用户说",
-    "陳伯",
-    "陳先生",
-    "陳太",
-    "鐵閘",
-    "星期二，早上",
-    "現有材料",
-    "按現有材料推想",
-    "故不採用",
-    "本文不寫",
-    "來源撐",
-    "下一步要",
-)
-
-
-def _looks_like_worksheet(markdown: str) -> bool:
-    leaked = ("我需要寫", "不要虛構", "只寫稿", "用户想让我", "We need answer")
-    if any(token in (markdown or "") for token in leaked):
-        return True
-    return sum(1 for token in _WORKSHEET_HEADS if token in markdown) >= 2
+def _article_user_prompt(
+    hook: str, dek: str, slim: dict[str, Any], sources: list[dict[str, Any]]
+) -> str:
+    return (
+        f"寫一篇可以刊登的香港口語繁體雜誌特稿。正文必須 {MIN_ARTICLE_CJK}–{MAX_ARTICLE_CJK} 字"
+        "（只計中文字，唔計標點同來源）。少過 700 字當未寫完。\n"
+        f"標題用：{hook}\n"
+        f"dek 一句（唔好印「Standfirst」呢個字）：{dek}\n"
+        "來源 summary 裡每個數字、日期、人名、地名都要用。唔好因為材料短就寫兩段交差。\n"
+        "只寫下列來源裡有的事。不要虛構。不要解釋你的寫作決定。\n"
+        f"候選：{json.dumps(slim, ensure_ascii=False)}\n"
+        f"來源：{json.dumps(sources, ensure_ascii=False)}\n"
+        f"文末必須加上：{DISCLAIMER}\n"
+    )
 
 
 def _standfirst(markdown: str) -> str:

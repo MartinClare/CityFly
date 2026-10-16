@@ -9,6 +9,7 @@ from typing import Any
 
 from common.config import PROJECT_ROOT
 from hk_city import ledger
+from hk_city.article_leak import looks_like_worksheet
 
 DRAFTS = PROJECT_ROOT / "hk_city" / "data" / "drafts"
 CJK = re.compile(r"[\u4e00-\u9fff]")
@@ -35,9 +36,9 @@ def days() -> list[str]:
 
 
 def _is_worksheet(raw: str, dek: str) -> bool:
-    return dek.startswith(("我需要", "用户", "We need", "![hero]")) or (
-        "我需要寫" in raw or "不要虛構" in raw[:400]
-    )
+    if dek.startswith(("我需要", "用户", "We need", "![hero]")):
+        return True
+    return looks_like_worksheet(raw)
 
 
 def packs(day: str, *, status: str | None = None, hide_worksheets: bool = True) -> list[dict[str, Any]]:
