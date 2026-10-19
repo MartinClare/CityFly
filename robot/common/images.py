@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+import struct
 import time
 from pathlib import Path
 from typing import Any
@@ -22,6 +23,9 @@ STATUS_PATH = "/api/v1/jobs/recordInfo"
 POLL_SEC = 4
 MAX_POLLS = 45
 DOWNLOAD_TIMEOUT = 60
+MIN_BYTES = 20_000
+# Flat brand marks (e.g. Intel 2-colour lockups) compress tiny for their pixel area.
+MAX_FLAT_BYTES_PER_PIXEL = 0.06
 
 
 def available() -> bool:
@@ -33,10 +37,88 @@ def available() -> bool:
 
 
 _SKIP_IMG = re.compile(
-    r"(logo|icon|banner|button|spacer|pixel|sprite|avatar|favicon|wcag|iso9001|iso14001|brand-hk|lang\.png|hotline|erb\.png|pfa_)",
+    r"("
+    r"logo|wordmark|brandmark|lockup|sponsor|partner[-_]?logo|"
+    r"icon|banner|button|spacer|pixel|sprite|avatar|favicon|"
+    r"wcag|iso9001|iso14001|brand-hk|lang\.png|hotline|erb\.png|pfa_|"
+    r"[-_/]2c[-_]|[-_]2[-_]?color"
+    r")",
     re.I,
 )
 _PREFER_IMG = re.compile(r"(attachment|map|plan|diagram|figure|og:image)", re.I)
+
+
+def _is_logo_url(url: str) -> bool:
+    return bool(url and _SKIP_IMG.search(url))
+
+
+def _png_size(data: bytes) -> tuple[int, int] | None:
+    if len(data) < 24 or data[:8] != b"\x89PNG\r\n\x1a\n":
+        return None
+    return struct.unpack(">II", data[16:24])
+
+
+def _jpeg_size(data: bytes) -> tuple[int, int] | None:
+    if len(data) < 4 or data[:2] != b"\xff\xd8":
+        return None
+    i = 2
+    while i + 9 < len(data):
+        if data[i] != 0xFF:
+            i += 1
+            continue
+        marker = data[i + 1]
+        if marker in {0xC0, 0xC1, 0xC2}:  # SOF0/1/2
+            h, w = struct.unpack(">HH", data[i + 5 : i + 9])
+            return w, h
+        if marker in {0xD9, 0xDA}:
+            break
+        if i + 3 >= len(data):
+            break
+        seg_len = struct.unpack(">H", data[i + 2 : i + 4])[0]
+        i += 2 + seg_len
+    return None
+
+
+def _image_dims(data: bytes) -> tuple[int, int] | None:
+    return _png_size(data) or _jpeg_size(data)
+
+
+def _looks_like_logo_bytes(data: bytes, url: str = "") -> bool:
+    """Reject brand lockups: logo-ish URLs, or huge canvases with almost no pixel data."""
+    if _is_logo_url(url):
+        return True
+    dims = _image_dims(data)
+    if not dims:
+        return False
+    w, h = dims
+    if w < 1 or h < 1:
+        return True
+    pixels = w * h
+    # Tiny icons / brand marks even when the file clears MIN_BYTES.
+    if max(w, h) < 400 and min(w, h) < 200:
+        return True
+    bpp = len(data) / pixels
+    if pixels >= 400_000 and bpp < MAX_FLAT_BYTES_PER_PIXEL:
+        logger.info(
+            "Rejecting flat brand image %sx%s (%.4f bytes/px) %s",
+            w,
+            h,
+            bpp,
+            (url or "")[:120],
+        )
+        return True
+    return False
+
+
+def _accept_image_bytes(data: bytes, *, url: str = "", ctype: str = "") -> bool:
+    if len(data) < MIN_BYTES:
+        return False
+    ctype = (ctype or "").lower()
+    if ctype and not ctype.startswith("image/") and "octet-stream" not in ctype:
+        return False
+    if _looks_like_logo_bytes(data, url):
+        return False
+    return True
 
 
 def download_direct_image(
@@ -48,7 +130,7 @@ def download_direct_image(
     """Download a known hero URL (e.g. from RSS media:content). Skip tiny/logo assets."""
     if not image_url or not str(image_url).startswith("http"):
         return None
-    if _SKIP_IMG.search(image_url):
+    if _is_logo_url(image_url):
         return None
     session = requests.Session()
     session.headers.update(
@@ -60,10 +142,9 @@ def download_direct_image(
     try:
         img = session.get(image_url, timeout=DOWNLOAD_TIMEOUT)
         img.raise_for_status()
-        if len(img.content) < 20_000:
-            return None
-        ctype = (img.headers.get("content-type") or "").lower()
-        if ctype and not ctype.startswith("image/") and "octet-stream" not in ctype:
+        if not _accept_image_bytes(
+            img.content, url=image_url, ctype=img.headers.get("content-type", "")
+        ):
             return None
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_bytes(img.content)
@@ -103,7 +184,9 @@ def fetch_press_image(page_urls: list[str], dest: Path) -> dict[str, Any] | None
             try:
                 img = session.get(img_url, timeout=DOWNLOAD_TIMEOUT)
                 img.raise_for_status()
-                if len(img.content) < 20_000:
+                if not _accept_image_bytes(
+                    img.content, url=img_url, ctype=img.headers.get("content-type", "")
+                ):
                     continue
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 dest.write_bytes(img.content)
@@ -125,12 +208,16 @@ def _image_candidates(page: str, html: str, content_type: str) -> list[tuple[str
     soup = BeautifulSoup(html, "lxml")
     og = soup.find("meta", property="og:image") or soup.find("meta", attrs={"name": "og:image"})
     if og and og.get("content"):
-        found.append((urljoin(page, og["content"]), "og_image"))
-    for img in soup.find_all("img", src=True):
-        src = img["src"]
-        if _SKIP_IMG.search(src) or src.startswith("data:"):
+        og_url = urljoin(page, og["content"])
+        if not _is_logo_url(og_url):
+            found.append((og_url, "og_image"))
+    for img in soup.find_all("img"):
+        src = img.get("src") or img.get("data-src") or ""
+        if not src or src.startswith("data:") or _is_logo_url(src):
             continue
         full = urljoin(page, src)
+        if _is_logo_url(full):
+            continue
         kind = "official_map" if _PREFER_IMG.search(src) or "attachment" in src.lower() else "press_photo"
         if kind == "official_map":
             found.insert(0, (full, kind))

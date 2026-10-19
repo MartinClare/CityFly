@@ -147,7 +147,11 @@ def _parse_rss(name: str, content: bytes) -> list[dict[str, Any]]:
 
 
 _SKIP_FEED_IMG = re.compile(
-    r"(logo|icon|banner|button|spacer|pixel|sprite|avatar|favicon|1x1|tracking)",
+    r"("
+    r"logo|wordmark|brandmark|lockup|sponsor|partner[-_]?logo|"
+    r"icon|banner|button|spacer|pixel|sprite|avatar|favicon|1x1|tracking|"
+    r"[-_/]2c[-_]|[-_]2[-_]?color"
+    r")",
     re.I,
 )
 
