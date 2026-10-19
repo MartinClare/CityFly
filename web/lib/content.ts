@@ -144,7 +144,11 @@ export function storiesForEdition(ed: Edition, stories: Story[]): {
     .map((slug) => storyBySlug(stories, slug))
     .filter(Boolean) as Story[];
   for (const s of moreRaw) {
-    const pillar = (PILLAR_ORDER as readonly string[]).includes(s.pillar) ? s.pillar : "city";
+    const pillar = (
+      PILLAR_ORDER.includes(s.pillar as (typeof PILLAR_ORDER)[number])
+        ? s.pillar
+        : "city"
+    ) as (typeof PILLAR_ORDER)[number];
     const existing = rails.get(pillar);
     if (existing) {
       if (!existing.items.some((x) => x.slug === s.slug)) existing.items.push(s);
