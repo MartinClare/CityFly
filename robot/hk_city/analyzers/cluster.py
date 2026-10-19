@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import hashlib
 import re
+from difflib import SequenceMatcher
 from typing import Any
 from urllib.parse import urlparse
 
 from common.base_analyzer import BaseAnalyzer
+from hk_city.ledger import SIMILAR, title_key
 
 
 class ClusterAnalyzer(BaseAnalyzer):
@@ -36,7 +38,44 @@ class ClusterAnalyzer(BaseAnalyzer):
                     "sources": [_slim(item)],
                 }
             )
+        clusters = _merge_similar_titles(clusters)
         return {"count": len(clusters), "clusters": clusters}
+
+
+def _merge_similar_titles(clusters: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Same event on Unwire and the outlets it cites becomes one cluster."""
+    merged: list[dict[str, Any]] = []
+    keys: list[str] = []
+    for cluster in clusters:
+        key = title_key(cluster.get("title"))
+        hit = -1
+        if len(key) >= 10:
+            for i, other in enumerate(keys):
+                if len(other) >= 10 and SequenceMatcher(None, key, other).ratio() >= SIMILAR:
+                    hit = i
+                    break
+        if hit < 0:
+            merged.append(cluster)
+            keys.append(key)
+            continue
+        dest = merged[hit]
+        seen_links = {(s.get("link") or "") for s in dest.get("sources") or []}
+        for src in cluster.get("sources") or []:
+            link = src.get("link") or ""
+            if link and link in seen_links:
+                continue
+            dest.setdefault("sources", []).append(src)
+            if link:
+                seen_links.add(link)
+        try:
+            if int(cluster.get("primary_tier") or 9) < int(dest.get("primary_tier") or 9):
+                dest["title"] = cluster.get("title") or dest.get("title")
+                dest["link"] = cluster.get("link") or dest.get("link")
+                dest["primary_tier"] = cluster.get("primary_tier")
+                keys[hit] = title_key(dest.get("title"))
+        except (TypeError, ValueError):
+            pass
+    return merged
 
 
 def flatten_items(raw: dict[str, Any]) -> list[dict[str, Any]]:

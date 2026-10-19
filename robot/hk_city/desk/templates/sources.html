@@ -5,6 +5,28 @@
   <p class="meta">開關會即時影響之後嘅 hourly / daily 爬蟲。唔會自動 publish。</p>
   {% if saved %}<p class="banner ok">來源設定已儲存。</p>{% endif %}
   <form method="post" action="/sources">
+    {% if discovered %}
+    <section class="panel">
+      <h2 style="margin:0">Unwire 發現的來源</h2>
+      <p class="meta">已找到 RSS 的網站會永久加進「本地科技」，之後每次爬蟲都收新稿，名單只會越加越長。下面是暫時未找到 RSS 的網站。</p>
+      <ul class="feed-list">
+        {% for d in discovered %}
+        <li>
+          <div>
+            <strong>{{ d.name or d.domain }}</strong>
+            <span class="pill">{{ d.count or 1 }} 次</span>
+            <div class="url">{{ d.domain }}{% if d.sample_url %} · <a href="{{ d.sample_url }}" target="_blank" rel="noreferrer">例子</a>{% endif %}</div>
+            <div class="row" style="margin-top:8px">
+              <input type="url" name="disc_url_{{ d.domain }}" placeholder="https://…/feed">
+              <label class="check"><input type="checkbox" name="disc_add_{{ d.domain }}"> 加入來源</label>
+              <label class="check"><input type="checkbox" name="disc_dismiss_{{ d.domain }}"> 略過</label>
+            </div>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
     {% for g in groups %}
     <section class="panel">
       <div class="row" style="justify-content:space-between">

@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from typing import Any
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 import feedparser
 import requests
@@ -89,11 +89,19 @@ def _enrich_article_pages(session: requests.Session, items: list[dict[str, Any]]
     else:
         return
 
+    cited: list[tuple[str, list[dict[str, str]]]] = []
+
     def one(it: dict[str, Any]) -> None:
         try:
             resp = session.get(it["link"], timeout=FEED_TIMEOUT_SEC)
             resp.raise_for_status()
+            if "Unwire" in name:
+                links = _unwire_attribution_links(resp.text, it["link"])
+                if links:
+                    cited.append((it["link"], links))
             body = _article_body(resp.text)
+            if "Unwire" in name:
+                body = _trim_unwire_tail(body)
             if len(body) >= 200:
                 it["summary"] = body[:2000]
         except Exception as exc:
@@ -101,6 +109,60 @@ def _enrich_article_pages(session: requests.Session, items: list[dict[str, Any]]
 
     with ThreadPoolExecutor(max_workers=4) as pool:
         list(pool.map(one, targets))
+
+    if cited and "Unwire" in name:
+        _remember_unwire_outlets(cited)
+
+
+def _remember_unwire_outlets(cited: list[tuple[str, list[dict[str, str]]]]) -> None:
+    try:
+        from hk_city.collectors.discovered_outlets import note_attributions
+    except Exception as exc:
+        logger.warning("Unwire outlet import failed: %s", exc)
+        return
+    subscribed = queued = 0
+    for sample, links in cited:
+        try:
+            stats = note_attributions(links, sample_url=sample)
+        except Exception as exc:
+            logger.warning("Unwire outlet note failed: %s", exc)
+            continue
+        subscribed += int(stats.get("subscribed") or 0)
+        queued += int(stats.get("queued") or 0)
+    if subscribed or queued:
+        logger.info("Unwire outlets: subscribed %d new feeds, queued %d unknown", subscribed, queued)
+
+
+_ATTR_START = re.compile(r"^(資料來源|來源)\s*[：:]\s*")
+_UNWIRE_TAIL = re.compile(r"\s*(相關文章|更多精彩文章).*$")
+
+
+def _trim_unwire_tail(text: str) -> str:
+    return _UNWIRE_TAIL.sub("", text or "").strip()
+
+
+def _unwire_attribution_links(html: str, base: str) -> list[dict[str, str]]:
+    """External outlets named in Unwire's closing 來源 / 資料來源 line."""
+    soup = BeautifulSoup(html, "lxml")
+    found: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for node in soup.find_all(["p", "div", "li"]):
+        text = node.get_text(" ", strip=True)
+        if not _ATTR_START.match(text):
+            continue
+        for anchor in node.find_all("a", href=True):
+            href = urljoin(base, anchor["href"].strip())
+            host = (urlparse(href).hostname or "").lower()
+            if not href.startswith("http") or "unwire." in host:
+                continue
+            name = anchor.get_text(" ", strip=True) or host
+            if href in seen:
+                continue
+            seen.add(href)
+            found.append({"name": name, "url": href})
+        if found:
+            break
+    return found
 
 
 def _article_body(html: str) -> str:

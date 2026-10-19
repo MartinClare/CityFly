@@ -27,6 +27,8 @@ robot/hk_city/data/drafts/**
 robot/hk_city/data/ledger/**
 !robot/hk_city/data/**/.gitkeep
 robot/hk_city/data/cron.log
+robot/hk_city/data/desk-settings.json
+robot/hk_city/data/discovered_outlets.json
 robot/scripts/alibaba/.state/
 .vercel
 .env*

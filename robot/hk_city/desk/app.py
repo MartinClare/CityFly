@@ -400,7 +400,20 @@ async def sources_page(request: Request, saved: str = ""):
                 "extra_feeds": state.get("extra_feeds") or [],
             }
         )
-    return render(request, "sources.html", _ctx(request, title="來源", groups=groups, saved=bool(saved), active="sources"),)
+    from hk_city.collectors.discovered_outlets import pending_outlets
+
+    return render(
+        request,
+        "sources.html",
+        _ctx(
+            request,
+            title="來源",
+            groups=groups,
+            discovered=pending_outlets(),
+            saved=bool(saved),
+            active="sources",
+        ),
+    )
 
 
 @app.post("/sources")
@@ -461,6 +474,35 @@ async def sources_save(request: Request):
                 }
             )
         slot["extra_feeds"] = kept_extras
+    from hk_city.collectors.discovered_outlets import dismiss_domain, pending_outlets
+
+    for row in pending_outlets():
+        domain = row.get("domain") or ""
+        if not domain:
+            continue
+        if form.get(f"disc_dismiss_{domain}") == "on":
+            dismiss_domain(domain)
+            continue
+        feed_url = (form.get(f"disc_url_{domain}") or "").strip()
+        if form.get(f"disc_add_{domain}") == "on" and feed_url:
+            tech = settings.setdefault("collectors", {}).setdefault(
+                "tech_local", {"enabled": True, "limit": 50, "feeds": [], "extra_feeds": []}
+            )
+            extras = list(tech.get("extra_feeds") or [])
+            if not any((e.get("url") or "").rstrip("/") == feed_url.rstrip("/") for e in extras):
+                extras.append(
+                    {
+                        "name": row.get("name") or domain,
+                        "url": feed_url,
+                        "kind": "rss",
+                        "tier": 2,
+                        "policy": "rss_only",
+                        "enabled": True,
+                        "via": "unwire",
+                    }
+                )
+                tech["extra_feeds"] = extras
+            dismiss_domain(domain)
     save_settings(settings)
     return RedirectResponse("/sources?saved=1", status_code=303)
 
