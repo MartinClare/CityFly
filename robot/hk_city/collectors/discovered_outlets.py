@@ -146,8 +146,11 @@ def note_attributions(
         seen.add(domain)
         mapped = lookup_feed(domain)
         feed_name, feed_url = mapped if mapped else (name, "")
-        if not feed_url:
+        already = by_domain.get(domain)
+        if not feed_url and not (already and (already.get("dismissed") or already.get("feed_url") or int(already.get("count") or 0) > 0)):
             feed_url = discover_rss(url) or ""
+            if feed_url and already is not None:
+                already["feed_url"] = feed_url
         if feed_url:
             if _subscribe(feed_name or domain, feed_url, topic):
                 subscribed += 1
