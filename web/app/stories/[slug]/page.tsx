@@ -2,17 +2,22 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
-import { stories, storyBySlug } from "@/lib/content";
+import { loadMagazine, storyBySlug } from "@/lib/content";
 
 type Props = { params: Promise<{ slug: string }> };
 
-export function generateStaticParams() {
+export const revalidate = 30;
+export const dynamicParams = true;
+
+export async function generateStaticParams() {
+  const { stories } = await loadMagazine();
   return stories.map((s) => ({ slug: s.slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const story = storyBySlug(slug);
+  const { stories } = await loadMagazine();
+  const story = storyBySlug(stories, slug);
   if (!story) return {};
   return {
     title: story.og_title || story.headline,
@@ -27,7 +32,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function StoryPage({ params }: Props) {
   const { slug } = await params;
-  const story = storyBySlug(slug);
+  const { stories } = await loadMagazine();
+  const story = storyBySlug(stories, slug);
   if (!story) notFound();
 
   const shareUrl = `https://www.citysight.net/stories/${story.slug}`;

@@ -27,11 +27,18 @@ PILLAR_LABELS = {
 }
 
 
+_MODEL_COMMENT = re.compile(r"<!--\s*model:[^>]*-->\s*")
+
+
+def _strip_model_comment(text: str) -> str:
+    return _MODEL_COMMENT.sub("", text or "")
+
+
 def _standfirst(body: str) -> str:
     lines = []
     for line in body.splitlines():
         s = line.strip()
-        if not s or s.startswith("#") or s.startswith("!") or s.startswith("*"):
+        if not s or s.startswith("#") or s.startswith("!") or s.startswith("*") or s.startswith("<!--"):
             if lines:
                 break
             continue
@@ -109,10 +116,12 @@ def _load_approved(day: str | None) -> list[dict[str, Any]]:
             md_path = day_dir / f"{js.stem}.md"
             if not md_path.exists():
                 continue
-            body = md_path.read_text(encoding="utf-8")
+            body = _strip_model_comment(md_path.read_text(encoding="utf-8"))
             web = meta.get("web") or {}
             headline = meta.get("headline") or web.get("og_title") or js.stem
-            dek = web.get("excerpt") or web.get("og_description") or _standfirst(body)
+            dek = _strip_model_comment(web.get("excerpt") or web.get("og_description") or "").strip()
+            if not dek or dek.lstrip().startswith(("!", "#", "*")):
+                dek = _standfirst(body)
             out.append(
                 {
                     "slug": meta.get("slug") or js.stem,
@@ -124,7 +133,7 @@ def _load_approved(day: str | None) -> list[dict[str, Any]]:
                     "popularity": float(meta.get("popularity") or meta.get("score") or 0),
                     "body_md": _body_without_hero(body),
                     "og_title": web.get("og_title") or headline,
-                    "og_description": web.get("og_description") or dek,
+                    "og_description": _strip_model_comment(web.get("og_description") or "").strip() or dek,
                     "disclaimer_required": bool(meta.get("disclaimer_required")),
                     "sources": meta.get("sources") or [],
                     "_day_dir": day_dir,
@@ -193,6 +202,79 @@ def _pick_edition(stories: list[dict[str, Any]], date: str) -> dict[str, Any]:
     }
 
 
+def _story_row(s: dict[str, Any], hero: str | None) -> dict[str, Any]:
+    return {
+        "slug": s["slug"],
+        "as_of": s["as_of"],
+        "pillar": s["pillar"],
+        "pillar_label": PILLAR_LABELS.get(s["pillar"], s["pillar"]),
+        "headline": s["headline"],
+        "dek": s["dek"],
+        "placement": s["placement"],
+        "hero": hero,
+        "body_md": s["body_md"],
+        "og_title": s["og_title"],
+        "og_description": s["og_description"],
+        "disclaimer_required": s["disclaimer_required"],
+        "sources": [
+            {"title": x.get("title"), "url": x.get("url"), "source": x.get("source")}
+            for x in s["sources"]
+            if isinstance(x, dict)
+        ],
+    }
+
+
+def _empty_edition() -> dict[str, Any]:
+    return {
+        "date": "",
+        "a1": None,
+        "a2": [],
+        "inside": {},
+        "more": [],
+        "pillar_labels": PILLAR_LABELS,
+    }
+
+
+def magazine_payload(*, hero_base: str | None = None) -> dict[str, Any]:
+    """Approved stories for the public site. hero_base makes image URLs absolute."""
+    approved = _load_approved(None)
+    stories_out: list[dict[str, Any]] = []
+    for s in approved:
+        hero = None
+        src = s["_hero_src"]
+        if src:
+            dest_name = f"{s['slug']}{src.suffix.lower()}"
+            if hero_base:
+                hero = f"{hero_base.rstrip('/')}/published/images/{dest_name}"
+            else:
+                hero = f"/heroes/{dest_name}"
+        stories_out.append(_story_row(s, hero))
+    if not stories_out:
+        return {"stories": [], "edition": _empty_edition(), "editions": {}}
+    by_day: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for s in stories_out:
+        by_day[s["as_of"]].append(s)
+    latest = sorted(by_day.keys())[-1]
+    return {
+        "stories": stories_out,
+        "edition": _pick_edition(approved, latest),
+        "editions": {d: _pick_edition(approved, d) for d in by_day},
+    }
+
+
+def approved_hero_file(name: str) -> Path | None:
+    """Image file for an approved story, or None if the name is not published."""
+    if not name or "/" in name or ".." in name:
+        return None
+    for s in _load_approved(None):
+        src = s["_hero_src"]
+        if not src:
+            continue
+        if f"{s['slug']}{src.suffix.lower()}" == name and src.exists():
+            return src
+    return None
+
+
 def publish(day: str | None = None) -> dict[str, Any]:
     approved = _load_approved(day)
     if not approved:
@@ -212,27 +294,7 @@ def publish(day: str | None = None) -> dict[str, Any]:
             dest = heroes_dir / dest_name
             shutil.copy2(src, dest)
             hero_rel = f"/heroes/{dest_name}"
-        stories_out.append(
-            {
-                "slug": s["slug"],
-                "as_of": s["as_of"],
-                "pillar": s["pillar"],
-                "pillar_label": PILLAR_LABELS.get(s["pillar"], s["pillar"]),
-                "headline": s["headline"],
-                "dek": s["dek"],
-                "placement": s["placement"],
-                "hero": hero_rel,
-                "body_md": s["body_md"],
-                "og_title": s["og_title"],
-                "og_description": s["og_description"],
-                "disclaimer_required": s["disclaimer_required"],
-                "sources": [
-                    {"title": x.get("title"), "url": x.get("url"), "source": x.get("source")}
-                    for x in s["sources"]
-                    if isinstance(x, dict)
-                ],
-            }
-        )
+        stories_out.append(_story_row(s, hero_rel))
 
     by_day: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for s in stories_out:

@@ -11,7 +11,6 @@ from typing import Any
 
 from common import images, llm
 from common.base_reporter import BaseReporter
-from common.config import get_llm_config
 from hk_city import ledger
 
 logger = logging.getLogger(__name__)
@@ -64,6 +63,28 @@ ARTICLE_SYSTEM = """你是 City Fly 的雜誌撰稿。聲線接近 Bloomberg Cit
 4. 文末 ## 來源 + 指定免責聲明
 """
 
+ADVANCED_TECH_ARTICLE_SYSTEM = """你是 City Sight（City Fly）的雜誌撰稿。聲線接近 Bloomberg CityLab / The Atlantic：冷靜、具體。
+全文必須用香港書面中文（繁體），不是粵語口語書寫。英文只保留專有名詞與讀者慣用的詞，例如 AI、OpenAI、Tesla、CUDA。
+
+來源標題是英文雜誌原題，只作事實來源，不可把英文原題當作中文標題貼上。
+
+只寫稿。不要寫編輯室、研究過程、或你為什麼這樣寫。
+
+不准：
+- 發明人名、對話、街道場面、星期二早上
+- 發明數字、日期、未見於來源的傳聞
+- 在正文解釋「來源沒有」「現有材料看不到」「本文不寫」「故不採用」「按現有材料推想」「來源撐得住」「這是宣稱不是結論」「下一步要核對的文件」
+- 讚政策；叫人買、賣、租、入市
+
+來源沒有的細節，略過。不要向讀者交代你略過了什麼。
+
+結構：
+1. 第一行：# 自寫的書面中文標題（面向生活會怎樣變，不要翻譯腔）
+2. 第二段：一句書面中文 dek，不要印 Standfirst
+3. 正文 700–1000 字（只計中文字）。少過 700 字就未完。最多 3 個為此篇新造的小標題
+4. 文末 ## 來源 + 指定免責聲明
+"""
+
 MIN_ARTICLE_CJK = 700
 MAX_ARTICLE_CJK = 1000
 
@@ -99,6 +120,10 @@ class CityFlyReporter(BaseReporter):
         self.storage.write_report(markdown)
         packs = self.write_article_packs(view, raw)
         logger.info("[%s] wrote %d article packs", self.name, len(packs))
+        from hk_city.auto_approve import export_site, review_day
+
+        review_day(self.storage.as_of)
+        export_site()
         return markdown
 
     def write_article_packs(self, view: dict[str, Any], raw: dict[str, Any]) -> list[dict[str, Any]]:
@@ -112,10 +137,19 @@ class CityFlyReporter(BaseReporter):
         if allowed:
             ranked = [c for c in ranked if (c.get("pillar") or "city") in allowed]
         candidates = _pick_interesting_mix(ranked, limit)
+        already_today = _drafts_today(self.storage.as_of)
         packs = []
         for idx, cand in enumerate(candidates, start=1):
-            if ledger.is_seen(cand, today=self.storage.as_of):
+            if ledger.is_seen(cand, today=self.storage.as_of) or _same_story_today(cand, already_today):
                 logger.info("Skip already covered: %s", cand.get("title"))
+                continue
+            from hk_city.analyzers.classify import off_brief_kind
+
+            if off_brief_kind(cand.get("title") or "", cand.get("summary") or ""):
+                logger.info("Skip crime, disease, or death: %s", cand.get("title"))
+                continue
+            if cand.get("advanced_tech") and cand.get("future_life") is False:
+                logger.info("Skip overseas tech without future-life change: %s", cand.get("title"))
                 continue
             try:
                 packs.append(self._one_pack(idx, cand, view))
@@ -185,57 +219,84 @@ class CityFlyReporter(BaseReporter):
         return meta
 
     def _draft_article(self, cand: dict[str, Any], view: dict[str, Any], sources: list[dict[str, Any]]) -> str:
-        model = "template"
         if llm.available():
             try:
-                model = get_llm_config().get("model", "deepseek")
+                advanced = bool(cand.get("advanced_tech"))
+                system = ADVANCED_TECH_ARTICLE_SYSTEM if advanced else ARTICLE_SYSTEM
                 hook = cand.get("hook") or cand.get("title")
                 dek = cand.get("dek") or ""
                 slim = {
                     "hook": hook,
                     "dek": dek,
                     "title": cand.get("title"),
+                    "title_source": cand.get("title"),
                     "pillar": cand.get("pillar"),
                     "format": cand.get("format"),
                     "district": cand.get("district"),
                     "tier": cand.get("tier"),
                     "link": cand.get("link"),
                     "summary": (cand.get("summary") or "")[:800],
+                    "advanced_tech": advanced,
+                    "future_life": cand.get("future_life"),
                 }
-                user = (
-                    f"寫一篇可以刊登的香港口語繁體雜誌特稿。正文必須 {MIN_ARTICLE_CJK}–{MAX_ARTICLE_CJK} 字"
-                    "（只計中文字，唔計標點同來源）。少過 700 字當未寫完。\n"
-                    f"第一行必須係標題：# {hook}\n"
-                    f"第二段用一句 dek（唔好印「Standfirst」呢個字）：{dek}\n"
-                    "來源 summary 裡每個數字、日期、人名、地名都要用。唔好因為材料短就寫兩段交差。\n"
-                    "只寫下列來源裡有的事。不要虛構。不要解釋你的寫作決定。\n"
-                    f"候選：{json.dumps(slim, ensure_ascii=False)}\n"
-                    f"來源：{json.dumps(sources, ensure_ascii=False)}\n"
-                    f"文末必須加上：{DISCLAIMER}\n"
-                )
-                body = llm.chat(ARTICLE_SYSTEM, user, temperature=0.55, max_tokens=8000)
-                n = _cjk_len(body)
-                if n < MIN_ARTICLE_CJK or _looks_like_worksheet(body):
-                    body = llm.chat(
-                        ARTICLE_SYSTEM,
-                        user + f"\n上一稿得 {n} 字。重寫成雜誌特稿，必須寫滿 {MIN_ARTICLE_CJK} 字。"
-                        "小標題要為此篇新造。來源裡的數字全部寫入正文。\n",
-                        temperature=0.6,
-                        max_tokens=8000,
+                if advanced:
+                    user = (
+                        f"寫一篇可以刊登的香港書面中文雜誌特稿。正文必須 {MIN_ARTICLE_CJK}–{MAX_ARTICLE_CJK} 字"
+                        "（只計中文字，不計標點與來源）。少過 700 字當未寫完。\n"
+                        "第一行必須是你自寫的書面中文標題：# ……\n"
+                        "不要把英文原題當標題；英文原題只在來源資料裡。\n"
+                        "第二段用一句書面中文 dek（不要印「Standfirst」這個字）。\n"
+                        "寫清這項技術怎樣改變普通人未來幾年的生活、工作、出行、電力、醫療、私隱或常用裝置。\n"
+                        "來源 summary 裡每個數字、日期、人名、地名都要用。不要因為材料短就寫兩段交差。\n"
+                        "只寫下列來源裡有的事。不要虛構。不要解釋你的寫作決定。\n"
+                        f"候選：{json.dumps(slim, ensure_ascii=False)}\n"
+                        f"來源：{json.dumps(sources, ensure_ascii=False)}\n"
+                        f"文末必須加上：{DISCLAIMER}\n"
                     )
+                else:
+                    user = (
+                        f"寫一篇可以刊登的香港口語繁體雜誌特稿。正文必須 {MIN_ARTICLE_CJK}–{MAX_ARTICLE_CJK} 字"
+                        "（只計中文字，唔計標點同來源）。少過 700 字當未寫完。\n"
+                        f"第一行必須係標題：# {hook}\n"
+                        f"第二段用一句 dek（唔好印「Standfirst」呢個字）：{dek}\n"
+                        "來源 summary 裡每個數字、日期、人名、地名都要用。唔好因為材料短就寫兩段交差。\n"
+                        "只寫下列來源裡有的事。不要虛構。不要解釋你的寫作決定。\n"
+                        f"候選：{json.dumps(slim, ensure_ascii=False)}\n"
+                        f"來源：{json.dumps(sources, ensure_ascii=False)}\n"
+                        f"文末必須加上：{DISCLAIMER}\n"
+                    )
+                body = llm.chat(system, user, temperature=0.55, max_tokens=8000)
+                n = _cjk_len(body)
+                if n < MIN_ARTICLE_CJK or _looks_like_worksheet(body) or (
+                    advanced and _heading_still_english(body)
+                ):
+                    retry = (
+                        f"\n上一稿得 {n} 字。重寫成雜誌特稿，必須寫滿 {MIN_ARTICLE_CJK} 字。"
+                        "小標題要為此篇新造。來源裡的數字全部寫入正文。\n"
+                    )
+                    if advanced:
+                        retry += "標題必須是書面中文，不可保留英文原題。\n"
+                    body = llm.chat(system, user + retry, temperature=0.6, max_tokens=8000)
                     n = _cjk_len(body)
-                    if n < MIN_ARTICLE_CJK or _looks_like_worksheet(body):
-                        body = llm.chat(
-                            ARTICLE_SYSTEM,
-                            user + f"\n上一稿仍然得 {n} 字。再寫一次，正文必須 {MIN_ARTICLE_CJK}–{MAX_ARTICLE_CJK} 字。"
-                            "把來源 summary 拆開寫：人、地、數、決定各寫一段。唔好發明。\n",
-                            temperature=0.65,
-                            max_tokens=8000,
+                    if n < MIN_ARTICLE_CJK or _looks_like_worksheet(body) or (
+                        advanced and _heading_still_english(body)
+                    ):
+                        retry2 = (
+                            f"\n上一稿仍然得 {n} 字。再寫一次，正文必須 {MIN_ARTICLE_CJK}–{MAX_ARTICLE_CJK} 字。"
+                            "把來源 summary 拆開寫：人、地、數、決定各寫一段。不要發明。\n"
                         )
+                        if advanced:
+                            retry2 += "第一行 # 標題必須含中文，且不得照抄英文原題。\n"
+                        body = llm.chat(system, user + retry2, temperature=0.65, max_tokens=8000)
                         n = _cjk_len(body)
-                        if n < MIN_ARTICLE_CJK or n > MAX_ARTICLE_CJK + 80 or _looks_like_worksheet(body):
-                            raise RuntimeError(f"article still short or worksheet ({n} 字)")
-                return f"<!-- model: {model} -->\n\n{body.strip()}\n"
+                        if (
+                            n < MIN_ARTICLE_CJK
+                            or n > MAX_ARTICLE_CJK + 80
+                            or _looks_like_worksheet(body)
+                            or (advanced and _heading_still_english(body))
+                        ):
+                            raise RuntimeError(f"article still short, worksheet, or English title ({n} 字)")
+                return f"{body.strip()}\n"
             except Exception as exc:
                 logger.exception("Article LLM failed: %s", exc)
                 raise
@@ -245,6 +306,17 @@ class CityFlyReporter(BaseReporter):
         if self.config.get("skip_images"):
             return {"ok": False, "reason": "skip_images"}
         dest = self.storage.draft_image_path(slug, ".jpg")
+        image_url = cand.get("image_url")
+        if not image_url:
+            for src in cand.get("sources") or []:
+                if src.get("image_url"):
+                    image_url = src["image_url"]
+                    break
+        if image_url:
+            credit = f"{cand.get('source') or ''} {cand.get('link') or ''}".strip() or None
+            feed_hero = images.download_direct_image(image_url, dest, credit=credit)
+            if feed_hero and feed_hero.get("ok"):
+                return feed_hero
         urls = []
         for src in cand.get("sources") or []:
             link = src.get("link") or src.get("url")
@@ -304,16 +376,17 @@ def _source_bundle(cand: dict[str, Any]) -> list[dict[str, Any]]:
         if not link or link in seen:
             continue
         seen.add(link)
-        rows.append(
-            {
-                "title": src.get("title"),
-                "url": link,
-                "source": src.get("source"),
-                "tier": src.get("tier"),
-                "published": src.get("published"),
-                "summary": (src.get("summary") or "")[:800],
-            }
-        )
+        row = {
+            "title": src.get("title"),
+            "url": link,
+            "source": src.get("source"),
+            "tier": src.get("tier"),
+            "published": src.get("published"),
+            "summary": (src.get("summary") or "")[:800],
+        }
+        if src.get("image_url"):
+            row["image_url"] = src["image_url"]
+        rows.append(row)
     return rows
 
 
@@ -330,6 +403,38 @@ def _packable(cand: dict[str, Any]) -> bool:
     if tier <= 2:
         return True
     return cand.get("collector") == "local_news" and tier <= 3
+
+
+def _drafts_today(day: str) -> list[dict[str, Any]]:
+    from hk_city.desk.drafts_store import DRAFTS
+
+    folder = DRAFTS / day
+    if not folder.is_dir():
+        return []
+    rows = []
+    for js in folder.glob("*.json"):
+        try:
+            meta = json.loads(js.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        if isinstance(meta, dict):
+            meta.setdefault("slug", js.stem)
+            rows.append(meta)
+    return rows
+
+
+def _same_story_today(cand: dict[str, Any], existing: list[dict[str, Any]]) -> bool:
+    from hk_city.auto_approve import similar
+
+    sources = list(cand.get("sources") or [])
+    if cand.get("link") or cand.get("url"):
+        sources.append({"url": cand.get("link") or cand.get("url"), "title": cand.get("title")})
+    probe = {
+        "headline": cand.get("hook") or cand.get("title"),
+        "title_source": cand.get("title"),
+        "sources": sources,
+    }
+    return any(similar(probe, row) for row in existing)
 
 
 def _pick_interesting_mix(ranked: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
@@ -376,6 +481,18 @@ def _first_heading(markdown: str) -> str:
         if line.startswith("# "):
             return line[2:].strip()
     return ""
+
+
+def _heading_still_english(markdown: str) -> bool:
+    """True when the H1 has almost no CJK — overseas drafts must not keep the English title."""
+    from hk_city.auto_approve import english_title
+
+    heading = _first_heading(markdown)
+    if not heading:
+        return True
+    if english_title(heading):
+        return True
+    return len(re.findall(r"[\u4e00-\u9fff]", heading)) < 4
 
 
 _WORKSHEET_HEADS = (
@@ -488,7 +605,6 @@ def _template_article(cand: dict[str, Any], sources: list[dict[str, Any]], model
     title = cand.get("title") or "待定題目"
     links = "\n".join(f"- {s.get('source')}: {s.get('url')}" for s in sources) or "- （無可用連結）"
     return (
-        f"<!-- model: {model} -->\n\n"
         f"# {title}\n\n"
         f"這則消息可能打開一個生意、投資觀察或建造窗口——現有材料還不夠寫成完整特稿。\n\n"
         f"{cand.get('district') or '香港'}。來源標題：{title}。請編輯按原始文件補場面、機制與三個窗口。\n\n"

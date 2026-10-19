@@ -39,6 +39,47 @@ _SKIP_IMG = re.compile(
 _PREFER_IMG = re.compile(r"(attachment|map|plan|diagram|figure|og:image)", re.I)
 
 
+def download_direct_image(
+    image_url: str,
+    dest: Path,
+    *,
+    credit: str | None = None,
+) -> dict[str, Any] | None:
+    """Download a known hero URL (e.g. from RSS media:content). Skip tiny/logo assets."""
+    if not image_url or not str(image_url).startswith("http"):
+        return None
+    if _SKIP_IMG.search(image_url):
+        return None
+    session = requests.Session()
+    session.headers.update(
+        {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) CityFlyBot/0.1",
+            "Accept-Language": "zh-HK,zh;q=0.9,en;q=0.8",
+        }
+    )
+    try:
+        img = session.get(image_url, timeout=DOWNLOAD_TIMEOUT)
+        img.raise_for_status()
+        if len(img.content) < 20_000:
+            return None
+        ctype = (img.headers.get("content-type") or "").lower()
+        if ctype and not ctype.startswith("image/") and "octet-stream" not in ctype:
+            return None
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(img.content)
+        return {
+            "ok": True,
+            "path": str(dest),
+            "source_url": image_url,
+            "credit": credit or image_url,
+            "visual_kind": "rss_image",
+            "ai_generated": False,
+        }
+    except Exception as exc:
+        logger.info("Direct image failed %s: %s", image_url, exc)
+        return None
+
+
 def fetch_press_image(page_urls: list[str], dest: Path) -> dict[str, Any] | None:
     """Download the first usable official/press image. Skip logos and tiny assets."""
     session = requests.Session()

@@ -59,6 +59,9 @@
   <p class="banner ok">已儲存你嘅修改。</p>
   {% endif %}
 
+  {% if auto_reason %}
+  <p class="banner">自動審批：{{ auto_reason }}</p>
+  {% endif %}
   <p class="meta">{{ cjk }} 字 · <span class="pill">{{ status_label }}</span></p>
   <div class="article-view">
     {{ html_body | safe }}
@@ -85,7 +88,7 @@
   </div>
 
   <div class="danger-zone">
-    <form method="post" action="/a/{{ day }}/{{ slug }}/delete" onsubmit="return confirm('確定刪呢篇？圖同 ledger 都會清走。');">
+    <form method="post" action="/a/{{ day }}/{{ slug }}/delete" onsubmit="return confirm('確定刪呢篇？公開網站會一併收起。');">
       <input type="hidden" name="queue" value="{{ queue }}">
       <button class="danger" type="submit">刪除呢篇</button>
     </form>

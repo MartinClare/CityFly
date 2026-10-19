@@ -53,7 +53,7 @@ def flatten_items(raw: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def _slim(item: dict[str, Any]) -> dict[str, Any]:
-    return {
+    row = {
         "source": item.get("source"),
         "title": item.get("title"),
         "link": item.get("link"),
@@ -63,6 +63,9 @@ def _slim(item: dict[str, Any]) -> dict[str, Any]:
         "summary": (item.get("summary") or "")[:1200],
         "collector": item.get("_collector"),
     }
+    if item.get("image_url"):
+        row["image_url"] = item["image_url"]
+    return row
 
 
 def _cluster_key(item: dict[str, Any]) -> str:

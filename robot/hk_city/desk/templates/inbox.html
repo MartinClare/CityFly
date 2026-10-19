@@ -2,7 +2,17 @@
 {% block body %}
 <main>
   <h1>{{ day or "稿件" }}</h1>
-  <p class="meta">只改狀態，唔會自動上 Facebook 或公開網站。700–1000 字先算達標。</p>
+  <p class="meta">自動審批：指令外洩、同日相似稿、罪案、疾病、死亡新聞會不採用；英文來源標題會譯成中文，留喺待審。通過之後寫入公開雜誌；雲端會按日程把通過稿以連結帖上 Facebook（每日上限，唔會重複帖）。700–1000 字先算達標。</p>
+  {% if request.query_params.get('reviewed') %}
+  <p class="banner ok">已跑完今日自動審批，並更新網站內容。</p>
+  {% endif %}
+  {% if day %}
+  <form method="post" action="/auto">
+    <input type="hidden" name="day" value="{{ day }}">
+    <input type="hidden" name="status" value="{{ status }}">
+    <button type="submit">自動審批並更新網站</button>
+  </form>
+  {% endif %}
   <form class="filters" method="get" action="/">
     <div class="field">
       <label for="day">日期</label>
@@ -37,6 +47,7 @@
           · {% if row.hero %}有圖{% else %}未有圖{% endif %}
           · {{ statuses.get(row.status, row.status) }}
           {% if row.pillar %} · {{ row.pillar }}{% endif %}
+          {% if row.auto_reason %} · {{ row.auto_reason }}{% endif %}
         </p>
       </article>
     </a>

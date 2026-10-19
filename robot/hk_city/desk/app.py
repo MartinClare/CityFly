@@ -13,7 +13,7 @@ from urllib.parse import quote
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from itsdangerous import BadSignature, URLSafeSerializer
@@ -27,6 +27,7 @@ if str(ROOT / "scripts") not in sys.path:
 
 load_dotenv(ROOT / ".env")
 
+from hk_city.auto_approve import export_site, review_day
 from hk_city.desk import drafts_store as drafts
 from hk_city.desk.settings_store import (
     FEED_GROUPS,
@@ -97,7 +98,11 @@ def read_session(request: Request) -> str | None:
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
-        public = path in {"/login", "/favicon.ico"} or path.startswith("/static/")
+        public = (
+            path in {"/login", "/favicon.ico"}
+            or path.startswith("/static/")
+            or path.startswith("/published/")
+        )
         if public:
             return await call_next(request)
         if read_session(request):
@@ -192,6 +197,13 @@ async def inbox(request: Request, day: str = "", status: str = "draft_pending_re
         ),)
 
 
+@app.post("/auto")
+async def auto_review(day: str = Form(...), status: str = Form("draft_pending_review")):
+    review_day(day)
+    export_site()
+    return RedirectResponse(f"/?day={quote(day)}&status={quote(status)}&reviewed=1", status_code=303)
+
+
 @app.get("/a/{day}/{slug}", response_class=HTMLResponse)
 async def article(request: Request, day: str, slug: str, queue: str = "draft_pending_review"):
     try:
@@ -232,6 +244,7 @@ async def article(request: Request, day: str, slug: str, queue: str = "draft_pen
             nav_next=nav.get("next"),
             nav_index=nav.get("index") or 0,
             nav_total=nav.get("total") or 0,
+            auto_reason=(meta.get("auto_review") or {}).get("reason") or "",
         ),)
 
 
@@ -246,6 +259,7 @@ async def article_status(
         drafts.set_status(day, slug, status)
     except (ValueError, FileNotFoundError):
         return RedirectResponse(f"/a/{day}/{slug}?queue={queue}", status_code=303)
+    export_site()
     if status == "needs_edit":
         return RedirectResponse(f"/a/{day}/{slug}?queue={queue}", status_code=303)
     return RedirectResponse(drafts.next_location(day, slug, queue), status_code=303)
@@ -318,6 +332,30 @@ async def article_regen(
     if kind in {"image", "text"}:
         _start_regen(day, slug, kind)
     return RedirectResponse(f"/a/{day}/{slug}?queue={queue}", status_code=303)
+
+
+def _desk_public_url() -> str:
+    return os.environ.get("DESK_PUBLIC_URL", "https://desk.citysight.net").rstrip("/")
+
+
+@app.get("/published/magazine.json")
+async def published_magazine():
+    from publish_site import magazine_payload
+
+    payload = magazine_payload(hero_base=_desk_public_url())
+    return JSONResponse(payload, headers={"Cache-Control": "public, max-age=30"})
+
+
+@app.get("/published/images/{name}")
+async def published_image(name: str):
+    from publish_site import approved_hero_file
+
+    path = approved_hero_file(name)
+    if path is None:
+        return Response(status_code=404)
+    data = path.read_bytes()
+    ctype = "image/jpeg" if path.suffix.lower() in {".jpg", ".jpeg"} else "image/png"
+    return Response(data, media_type=ctype, headers={"Cache-Control": "public, max-age=300"})
 
 
 @app.get("/images/{name}")

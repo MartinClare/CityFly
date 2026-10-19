@@ -1,28 +1,32 @@
 import Link from "next/link";
-import { edition, formatEditionDate, PILLAR_ORDER } from "@/lib/content";
+import { formatEditionDate, loadMagazine, PILLAR_ORDER } from "@/lib/content";
+import { ThemeToggle } from "./ThemeToggle";
 
-const labels = edition.pillar_labels || {
-  property: "樓市與生活",
-  tech: "科技改變生活",
-  city: "城市大變身",
-  mobility: "基建與交通",
-  economy: "經濟、錢與機會",
-};
-
-export function Masthead({
+export async function Masthead({
   date,
   showDate = true,
 }: {
   date?: string;
   showDate?: boolean;
 }) {
+  const { edition } = await loadMagazine();
+  const labels = edition.pillar_labels || {
+    property: "樓市與生活",
+    tech: "科技改變生活",
+    city: "城市大變身",
+    mobility: "基建與交通",
+    economy: "經濟、錢與機會",
+  };
   const d = date || edition.date;
   return (
     <header className="masthead">
-      <Link href="/" className="logo">
-        CS Magazine
-        <span>City Sight</span>
-      </Link>
+      <div className="masthead-top">
+        <Link href="/" className="logo">
+          CS Magazine
+          <span>City Sight</span>
+        </Link>
+        <ThemeToggle />
+      </div>
       {showDate ? (
         <div className="edition-date">{formatEditionDate(d)} · 香港城市變化</div>
       ) : null}

@@ -79,6 +79,7 @@ def packs(day: str, *, status: str | None = None, hide_worksheets: bool = True) 
         st = meta.get("status") or "draft_pending_review"
         if status and status != "all" and st != status:
             continue
+        review = meta.get("auto_review") or {}
         rows.append(
             {
                 "slug": md.stem,
@@ -91,6 +92,7 @@ def packs(day: str, *, status: str | None = None, hide_worksheets: bool = True) 
                 "status": st,
                 "pillar": meta.get("pillar") or "",
                 "worksheet": worksheet,
+                "auto_reason": review.get("reason") or "",
             }
         )
     return rows

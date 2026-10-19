@@ -27,12 +27,18 @@ class EditorialViewAnalyzer(BaseAnalyzer):
                     "link": cluster.get("link") or primary.get("link"),
                     "id": cluster.get("id"),
                     "summary": primary.get("summary") or "",
+                    "image_url": primary.get("image_url"),
                     "_collector": cluster.get("collector") or primary.get("collector"),
                     "tier": cluster.get("primary_tier") or primary.get("tier") or 5,
                 }
             )
             row["cluster_size"] = len(cluster.get("sources") or [])
             row["sources"] = cluster.get("sources") or []
+            if not row.get("image_url"):
+                for src in row["sources"]:
+                    if src.get("image_url"):
+                        row["image_url"] = src["image_url"]
+                        break
             body = copy_stats(row["sources"] or [primary])
             row["source_cjk"] = body["cjk"]
             row["thin_copy"] = body["thin"]
@@ -79,7 +85,12 @@ def _score(row: dict[str, Any]) -> float:
     elif row.get("collector") == "local_news":
         score += 0.2
     if row.get("collector") == "tech_local":
-        score += 1.4
+        if row.get("advanced_tech") and row.get("future_life"):
+            score += 4.5
+        elif row.get("advanced_tech"):
+            score -= 2.0
+        else:
+            score += 0.4
     if row.get("collector") == "consultancy":
         score -= 1.0
     if row.get("gov_pr_echo"):

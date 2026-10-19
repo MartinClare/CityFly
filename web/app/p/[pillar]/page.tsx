@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
-  edition,
   formatEditionDate,
+  loadMagazine,
   PILLAR_ORDER,
-  stories,
   storyTeaser,
 } from "@/lib/content";
+
+export const revalidate = 30;
 
 type Props = { params: Promise<{ pillar: string }> };
 
@@ -16,6 +17,7 @@ export function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { edition } = await loadMagazine();
   const { pillar } = await params;
   const label = edition.pillar_labels?.[pillar] || pillar;
   return {
@@ -29,6 +31,7 @@ export default async function PillarPage({ params }: Props) {
   if (!PILLAR_ORDER.includes(pillar as (typeof PILLAR_ORDER)[number])) {
     notFound();
   }
+  const { stories, edition } = await loadMagazine();
   const label = edition.pillar_labels?.[pillar] || pillar;
   const items = stories
     .filter((s) => s.pillar === pillar)

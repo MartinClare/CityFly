@@ -120,17 +120,77 @@ def _parse_rss(name: str, content: bytes) -> list[dict[str, Any]]:
     parsed = feedparser.parse(content)
     items: list[dict[str, Any]] = []
     for e in parsed.entries:
-        items.append(
-            {
-                "id": getattr(e, "id", None) or getattr(e, "link", None) or e.get("title"),
-                "source": name,
-                "title": getattr(e, "title", "") or "",
-                "link": getattr(e, "link", "") or "",
-                "summary": _strip_html(getattr(e, "summary", "") or getattr(e, "description", "") or ""),
-                "published": _entry_time(e),
-            }
-        )
+        link = getattr(e, "link", "") or ""
+        raw_summary = getattr(e, "summary", "") or getattr(e, "description", "") or ""
+        raw_content = ""
+        for block in getattr(e, "content", None) or []:
+            if isinstance(block, dict) and block.get("value"):
+                raw_content = block["value"]
+                break
+            value = getattr(block, "value", None)
+            if value:
+                raw_content = value
+                break
+        image_url = _entry_image_url(e, link, raw_summary, raw_content)
+        row = {
+            "id": getattr(e, "id", None) or link or e.get("title"),
+            "source": name,
+            "title": getattr(e, "title", "") or "",
+            "link": link,
+            "summary": _strip_html(raw_summary or raw_content),
+            "published": _entry_time(e),
+        }
+        if image_url:
+            row["image_url"] = image_url
+        items.append(row)
     return items
+
+
+_SKIP_FEED_IMG = re.compile(
+    r"(logo|icon|banner|button|spacer|pixel|sprite|avatar|favicon|1x1|tracking)",
+    re.I,
+)
+
+
+def _entry_image_url(entry: Any, page_url: str, *html_blobs: str) -> str | None:
+    """First usable hero URL from media:/enclosure/<img>, or None."""
+    candidates: list[str] = []
+
+    for media in getattr(entry, "media_content", None) or []:
+        url = media.get("url") if isinstance(media, dict) else getattr(media, "url", None)
+        medium = (media.get("medium") if isinstance(media, dict) else getattr(media, "medium", None)) or ""
+        typ = (media.get("type") if isinstance(media, dict) else getattr(media, "type", None)) or ""
+        if url and (not medium or medium == "image" or typ.startswith("image/")):
+            candidates.append(url)
+
+    for thumb in getattr(entry, "media_thumbnail", None) or []:
+        url = thumb.get("url") if isinstance(thumb, dict) else getattr(thumb, "url", None)
+        if url:
+            candidates.append(url)
+
+    for enc in getattr(entry, "enclosures", None) or []:
+        url = enc.get("href") if isinstance(enc, dict) else getattr(enc, "href", None)
+        typ = (enc.get("type") if isinstance(enc, dict) else getattr(enc, "type", None)) or ""
+        if url and (typ.startswith("image/") or re.search(r"\.(jpe?g|png|webp|gif)(\?|$)", url, re.I)):
+            candidates.append(url)
+
+    for blob in html_blobs:
+        if not blob or "<img" not in blob.lower():
+            continue
+        for src in re.findall(r'<img[^>]+src=["\']([^"\']+)["\']', blob, re.I):
+            candidates.append(src)
+
+    base = page_url or ""
+    for raw in candidates:
+        url = urljoin(base, (raw or "").strip())
+        if not url.startswith("http"):
+            continue
+        if _SKIP_FEED_IMG.search(url):
+            continue
+        if url.startswith("data:"):
+            continue
+        return url
+    return None
 
 
 def _parse_html_list(name: str, base: str, html: str) -> list[dict[str, Any]]:

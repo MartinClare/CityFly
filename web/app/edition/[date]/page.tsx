@@ -1,18 +1,23 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { editions, formatEditionDate, storiesForEdition } from "@/lib/content";
+import { formatEditionDate, loadMagazine, storiesForEdition } from "@/lib/content";
 
 type Props = { params: Promise<{ date: string }> };
 
-export function generateStaticParams() {
+export const revalidate = 30;
+export const dynamicParams = true;
+
+export async function generateStaticParams() {
+  const { editions } = await loadMagazine();
   return Object.keys(editions).map((date) => ({ date }));
 }
 
 export default async function EditionPage({ params }: Props) {
   const { date } = await params;
+  const { stories, editions } = await loadMagazine();
   const ed = editions[date];
   if (!ed) notFound();
-  const { a1, a2, inside, more } = storiesForEdition(ed);
+  const { a1, a2, inside, more } = storiesForEdition(ed, stories);
 
   return (
     <main>

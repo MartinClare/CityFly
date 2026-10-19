@@ -76,10 +76,11 @@ def _hk_city_pipeline(storage: TopicStorage, config: dict[str, Any], args: argpa
 
     report_path = None
     if not args.skip_report:
+        logger.info("FULL DRAFT — writing report + article packs (not --hourly)")
         CityFlyReporter(storage, config).run(view, raw)
         report_path = str(storage.report_path())
     else:
-        logger.info("Skipping report (--skip-report)")
+        logger.info("Skipping report (--skip-report / --hourly) — no article packs")
 
     return {"view_path": str(path), "report_path": report_path, "statuses": statuses}
 

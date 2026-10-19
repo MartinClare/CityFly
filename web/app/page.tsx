@@ -1,11 +1,13 @@
 import Link from "next/link";
 import {
-  edition,
   formatEditionDate,
+  loadMagazine,
   storiesForEdition,
   storyTeaser,
   type Story,
 } from "@/lib/content";
+
+export const revalidate = 30;
 
 function todayStories(
   a1: Story | undefined,
@@ -23,8 +25,9 @@ function todayStories(
   return out;
 }
 
-export default function HomePage() {
-  const { a1, a2, inside, more } = storiesForEdition(edition);
+export default async function HomePage() {
+  const { stories, edition } = await loadMagazine();
+  const { a1, a2, inside, more } = storiesForEdition(edition, stories);
   const allToday = todayStories(a1, a2, inside, more);
 
   return (

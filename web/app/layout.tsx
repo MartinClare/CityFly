@@ -15,8 +15,13 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="zh-HK">
+    <html lang="zh-HK" suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("citysight-theme");if(t==="day"||t==="night")document.documentElement.setAttribute("data-theme",t);else document.documentElement.setAttribute("data-theme","night");}catch(e){document.documentElement.setAttribute("data-theme","night");}})();`,
+          }}
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
