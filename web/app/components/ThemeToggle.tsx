@@ -34,14 +34,14 @@ export function ThemeToggle() {
       type="button"
       className="theme-toggle"
       onClick={toggle}
-      aria-label={mode === "night" ? "切換日間模式" : "切換夜間模式"}
-      title={mode === "night" ? "日間模式" : "夜間模式"}
+      aria-label={mode === "night" ? "夜間模式，切換至日間" : "日間模式，切換至夜間"}
+      title={mode === "night" ? "夜間模式" : "日間模式"}
       data-ready={ready ? "true" : "false"}
     >
       <span className="theme-toggle-track" aria-hidden="true">
         <span className="theme-toggle-knob" data-mode={mode} />
       </span>
-      <span className="theme-toggle-label">{mode === "night" ? "日間" : "夜間"}</span>
+      <span className="theme-toggle-label">{mode === "night" ? "夜間" : "日間"}</span>
     </button>
   );
 }
