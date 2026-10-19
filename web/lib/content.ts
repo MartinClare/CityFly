@@ -127,17 +127,37 @@ export function storiesForEdition(ed: Edition, stories: Story[]): {
 } {
   const a1 = ed.a1 ? storyBySlug(stories, ed.a1) : undefined;
   const a2 = (ed.a2 || []).map((slug) => storyBySlug(stories, slug)).filter(Boolean) as Story[];
-  const inside = PILLAR_ORDER.filter((p) => (ed.inside?.[p] || []).length > 0).map(
-    (pillar) => ({
+  const rails = new Map(
+    PILLAR_ORDER.filter((p) => (ed.inside?.[p] || []).length > 0).map((pillar) => [
       pillar,
-      label: ed.pillar_labels?.[pillar] || pillar,
-      items: (ed.inside[pillar] || [])
-        .map((slug) => storyBySlug(stories, slug))
-        .filter(Boolean) as Story[],
-    }),
+      {
+        pillar,
+        label: ed.pillar_labels?.[pillar] || pillar,
+        items: (ed.inside[pillar] || [])
+          .map((slug) => storyBySlug(stories, slug))
+          .filter(Boolean) as Story[],
+      },
+    ]),
   );
-  const more = (ed.more || []).map((slug) => storyBySlug(stories, slug)).filter(Boolean) as Story[];
-  return { a1, a2, inside, more };
+  // Fold "今日更多" into pillar rails so the main column stays taller than the TOC.
+  const moreRaw = (ed.more || [])
+    .map((slug) => storyBySlug(stories, slug))
+    .filter(Boolean) as Story[];
+  for (const s of moreRaw) {
+    const pillar = (PILLAR_ORDER as readonly string[]).includes(s.pillar) ? s.pillar : "city";
+    const existing = rails.get(pillar);
+    if (existing) {
+      if (!existing.items.some((x) => x.slug === s.slug)) existing.items.push(s);
+    } else {
+      rails.set(pillar, {
+        pillar,
+        label: ed.pillar_labels?.[pillar] || pillar,
+        items: [s],
+      });
+    }
+  }
+  const inside = PILLAR_ORDER.filter((p) => rails.has(p)).map((p) => rails.get(p)!);
+  return { a1, a2, inside, more: [] };
 }
 
 export function formatEditionDate(iso: string): string {

@@ -88,15 +88,20 @@ export default async function HomePage() {
       <section className="body-grid">
         <div className="body-main">
           {inside.map((rail) => {
-            const lead = rail.items[0];
-            const rest = rail.items.slice(1);
+            const leadCount = rail.items.length >= 3 ? 2 : 1;
+            const leads = rail.items.slice(0, leadCount);
+            const rest = rail.items.slice(leadCount);
             return (
               <div key={rail.pillar} className="rail-block">
                 <h2 className="rail-head">
                   <Link href={`/p/${rail.pillar}`}>{rail.label}</Link>
                 </h2>
-                {lead ? (
-                  <Link className="rail-lead" href={`/stories/${lead.slug}`}>
+                {leads.map((lead) => (
+                  <Link
+                    key={lead.slug}
+                    className="rail-lead"
+                    href={`/stories/${lead.slug}`}
+                  >
                     {lead.hero ? (
                       <span className="rail-lead-thumb">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -108,7 +113,7 @@ export default async function HomePage() {
                       <span className="rail-lead-dek">{storyTeaser(lead, 70)}</span>
                     </span>
                   </Link>
-                ) : null}
+                ))}
                 {rest.length > 0 ? (
                   <ul className="rail-list">
                     {rest.map((s) => (

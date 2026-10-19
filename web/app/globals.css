@@ -476,6 +476,10 @@ img {
   min-height: 44px;
 }
 
+.rail-lead + .rail-lead {
+  border-top: 1px solid var(--line);
+}
+
 @media (min-width: 560px) {
   .rail-lead {
     grid-template-columns: minmax(12rem, 42%) 1fr;

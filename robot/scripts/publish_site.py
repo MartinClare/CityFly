@@ -177,14 +177,17 @@ def _pick_edition(stories: list[dict[str, Any]], date: str) -> dict[str, Any]:
 
     inside: dict[str, list[str]] = {p: [] for p in PILLAR_ORDER}
     more: list[str] = []
-    front_budget = 12
+    # Prefer filling pillar rails over a thin "今日更多" strip so the homepage
+    # main column outruns the sticky TOC.
+    front_budget = 28
+    per_pillar = 5
     front_count = (1 if a1 else 0) + len(a2)
 
     for s in day_sorted:
         if s["slug"] in used:
             continue
         pillar = s["pillar"] if s["pillar"] in inside else "city"
-        if front_count < front_budget and len(inside[pillar]) < 2:
+        if front_count < front_budget and len(inside[pillar]) < per_pillar:
             inside[pillar].append(s["slug"])
             used.add(s["slug"])
             front_count += 1
