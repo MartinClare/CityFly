@@ -31,6 +31,20 @@ OUTLET_FEEDS: dict[str, tuple[str, str]] = {
     "bbc.co.uk": ("BBC Technology", "https://feeds.bbci.co.uk/news/technology/rss.xml"),
     "rthk.hk": ("香港電台", "https://rthk.hk/rthk/news/rss/c_expressnews_clocal.xml"),
     "news.mingpao.com": ("明報", "https://news.mingpao.com/rss/pns/s00004.xml"),
+    # Recurring Unwire citations (only URLs that currently return a feed body)
+    "cnbc.com": ("CNBC Technology", "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=19854910"),
+    "theregister.com": ("The Register", "https://www.theregister.com/headlines.atom"),
+    "ft.com": ("Financial Times Technology", "https://www.ft.com/technology?format=rss"),
+    "axios.com": ("Axios", "https://www.axios.com/feeds/feed.rss"),
+    "nytimes.com": ("New York Times Technology", "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml"),
+    "nintendolife.com": ("Nintendo Life", "https://www.nintendolife.com/feeds/latest"),
+    "info.gov.hk": ("政府新聞公報", "https://www.info.gov.hk/gia/rss/general_zh.xml"),
+    "cnbeta.com.tw": ("cnBeta", "https://www.cnbeta.com.tw/backend.php"),
+    "inside.com.tw": ("INSIDE", "https://feeds.feedburner.com/inside-blog-taiwan"),
+    "gigazine.net": ("GIGAZINE", "https://gigazine.net/news/rss_atom/"),
+    "news.samsung.com": ("Samsung Newsroom", "https://news.samsung.com/global/feed"),
+    "blog.playstation.com": ("PlayStation Blog", "https://blog.playstation.com/feed/"),
+    "apple.com": ("Apple Newsroom", "https://www.apple.com/newsroom/rss-feed.rss"),
 }
 
 
@@ -45,4 +59,7 @@ def lookup_feed(domain: str) -> tuple[str, str] | None:
         parent = ".".join(parts[-2:])
         if parent in OUTLET_FEEDS:
             return OUTLET_FEEDS[parent]
+        # news.samsung.com style
+        if host.endswith("." + parent) and host in OUTLET_FEEDS:
+            return OUTLET_FEEDS[host]
     return None

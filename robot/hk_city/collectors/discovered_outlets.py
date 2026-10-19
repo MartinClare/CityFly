@@ -62,10 +62,30 @@ def _existing_feed_urls(topic: str = "hk_city") -> set[str]:
     return urls
 
 
+def _feed_alive(url: str) -> bool:
+    """Skip catalog URLs that 404 or do not look like a feed."""
+    import requests
+
+    try:
+        resp = requests.get(
+            url,
+            timeout=15,
+            headers={"User-Agent": "Mozilla/5.0 CityFlyBot/0.1", "Accept": "application/rss+xml, application/atom+xml, application/xml, text/xml, */*"},
+        )
+        if resp.status_code >= 400:
+            return False
+        body = (resp.text or "")[:4000].lower()
+        return any(tok in body for tok in ("<rss", "<feed", "<channel", "xmlns:atom", "<item", "<entry"))
+    except Exception:
+        return False
+
+
 def _subscribe(name: str, url: str, topic: str = "hk_city") -> bool:
     """Append a feed to the permanent tech_local list. Later crawls keep fetching it."""
     url = url.strip()
     if not url or url.rstrip("/") in _existing_feed_urls(topic):
+        return False
+    if not _feed_alive(url):
         return False
     settings = ensure_settings(topic)
     slot = settings.setdefault("collectors", {}).setdefault(
