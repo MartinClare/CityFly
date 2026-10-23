@@ -555,12 +555,16 @@ def _standfirst(markdown: str) -> str:
 
 
 def _facebook_caption(markdown: str, cand: dict[str, Any]) -> str:
-    thesis = _standfirst(markdown) or (cand.get("title") or "")
-    return (
-        f"{thesis}\n\n"
-        "生意、投資觀察、建造，邊度有窗口？"
-        "生活會點變，有咩威脅，定係仲有未證實的傳聞？"
-    )
+    from hk_city.facebook_publish import build_teaser_message
+
+    meta = {
+        "headline": _first_heading(markdown) or cand.get("title"),
+        "pillar": cand.get("pillar"),
+        "district": cand.get("district"),
+        "web": {"excerpt": _standfirst(markdown)},
+        "facebook": {"visual_thesis": _standfirst(markdown)},
+    }
+    return build_teaser_message(meta)
 
 
 def _ensure_source_footer(body: str, sources: list[dict[str, Any]]) -> str:

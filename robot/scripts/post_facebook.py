@@ -4,7 +4,7 @@
 Usage (on ECS):
   python scripts/post_facebook.py
   python scripts/post_facebook.py --lookback-days 14
-  python scripts/post_facebook.py --limit 0   # 0 = no cap (default)
+  python scripts/post_facebook.py --limit 0   # 0 = no cap (default is FACEBOOK_MAX_PER_RUN, usually 2)
 """
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ def main() -> int:
         "--limit",
         type=int,
         default=None,
-        help="Max posts this run; 0 or omit = post all pending (FACEBOOK_MAX_PER_RUN, default 0)",
+        help="Max posts this run; omit = FACEBOOK_MAX_PER_RUN (default 2); 0 = no cap",
     )
     parser.add_argument("--lookback-days", type=int, default=None, help="Only stories from the last N days")
     args = parser.parse_args()

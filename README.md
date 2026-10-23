@@ -46,5 +46,5 @@ Production target: `www.citysight.net` on Vercel (project root `web/`). DNS cuto
 
 ## Phase notes
 
-- No Facebook auto-post from cron. Share published www URLs only (Graph API later from desk).
+- **Facebook:** On ECS, approved stories can auto-post as link teasers after publish (`robot/hk_city/facebook_publish.py`, cron via `scripts/post_facebook.py`). Needs `FACEBOOK_PAGE_ID` and `FACEBOOK_PAGE_ACCESS_TOKEN` in `robot/.env`; skipped when unset. Default **2 posts per run** (`FACEBOOK_MAX_PER_RUN`; set `0` for no cap). Short hook + comment invite — not full dek.
 - Human approve only — never auto-publish drafts to the public site.
