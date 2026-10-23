@@ -25,6 +25,16 @@ logger = logging.getLogger(__name__)
 GRAPH = "https://graph.facebook.com/v21.0"
 HKT = ZoneInfo("Asia/Hong_Kong")
 
+# Per run (approve export or cron). Override with FACEBOOK_MAX_PER_RUN; 0 = no cap.
+DEFAULT_FACEBOOK_MAX_PER_RUN = 2
+MAX_MESSAGE_LEN = 500
+_HOOK_MAX = 180
+
+_LEGACY_CAPTION_MARKERS = (
+    "邊度有窗口",
+    "未證實的傳聞",
+)
+
 
 def _public_base() -> str:
     load_env()
@@ -63,15 +73,74 @@ def _wait_public(url: str, *, tries: int = 6, delay: float = 8.0) -> bool:
     return False
 
 
+def _first_sentence(text: str) -> str:
+    text = (text or "").strip()
+    if not text:
+        return ""
+    for sep in ("。", "！", "？", "\n"):
+        if sep in text:
+            return text.split(sep, 1)[0].strip() + (sep if sep != "\n" else "")
+    return text
+
+
+def _is_legacy_boilerplate_caption(caption: str) -> bool:
+    return any(m in caption for m in _LEGACY_CAPTION_MARKERS)
+
+
+def _hook_line(meta: dict[str, Any]) -> str:
+    headline = (meta.get("headline") or "").strip()
+    fb = meta.get("facebook") or {}
+    thesis = (fb.get("visual_thesis") or "").strip()
+    dek = ((meta.get("web") or {}).get("excerpt") or meta.get("dek") or "").strip()
+    for raw in (thesis, _first_sentence(dek), headline):
+        line = (raw or "").strip()
+        if not line:
+            continue
+        if line == headline and len(line) > _HOOK_MAX:
+            return line[:_HOOK_MAX].rstrip() + "…"
+        if len(line) > _HOOK_MAX:
+            return line[:_HOOK_MAX].rstrip() + "…"
+        return line
+    return headline[:_HOOK_MAX]
+
+
+def _comment_invite(meta: dict[str, Any]) -> str:
+    fb = meta.get("facebook") or {}
+    for key in ("comment_invite", "question", "invite"):
+        invite = (fb.get(key) or "").strip()
+        if invite:
+            return invite
+
+    pillar = (meta.get("pillar") or "").lower()
+    district = (meta.get("district") or "").strip()
+
+    by_pillar = {
+        "property": "規劃圖之外，你覺得落地時最大阻力會係邊一環？",
+        "economy": "條數亮眼，邊個群體先感受到代价或紅利？",
+        "transport": "如果只改一個環節，邊樣改動才真正郁到街坊日常？",
+        "environment": "環評過咗之後，社區仲要守住咩？",
+        "culture": "保留同發展之間，你會點劃條界？",
+    }
+    if pillar in by_pillar:
+        return by_pillar[pillar]
+    if district and district not in ("香港", "全港"):
+        return f"喺{district}呢單發展，你覺得仲欠嘅係配套定時間表？"
+    return "讀完你會問政府或市場邊一個決定？"
+
+
+def build_teaser_message(meta: dict[str, Any]) -> str:
+    """Short playbook-style hook + one precise comment invite (Traditional Chinese)."""
+    hook = _hook_line(meta)
+    invite = _comment_invite(meta)
+    return f"{hook}\n\n{invite}"
+
+
 def _message(meta: dict[str, Any]) -> str:
     fb = meta.get("facebook") or {}
     caption = (fb.get("caption") or "").strip()
-    if caption:
-        return caption[:500]
-    headline = (meta.get("headline") or "").strip()
-    dek = ((meta.get("web") or {}).get("excerpt") or meta.get("dek") or "").strip()
-    bits = [b for b in (headline, dek) if b]
-    return "\n\n".join(bits)[:500]
+    if caption and not _is_legacy_boilerplate_caption(caption):
+        return caption[:MAX_MESSAGE_LEN]
+    return build_teaser_message(meta)[:MAX_MESSAGE_LEN]
 
 
 def _already_posted(meta: dict[str, Any]) -> bool:
@@ -162,11 +231,18 @@ def post_one(day: str, slug: str, meta: dict[str, Any], js: Path, *, creds: tupl
     return {"ok": True, "slug": slug, "post_id": post_id, "url": url}
 
 
+def _max_per_run_from_env() -> int:
+    raw = (os.getenv("FACEBOOK_MAX_PER_RUN") or "").strip()
+    if not raw:
+        return DEFAULT_FACEBOOK_MAX_PER_RUN
+    return int(raw)
+
+
 def post_pending(*, limit: int | None = None, lookback_days: int | None = None) -> dict[str, Any]:
     """Post approved stories not yet on Facebook.
 
-    `limit` None/0 (default) = no cap — post every pending story in the lookback
-    window. Set FACEBOOK_MAX_PER_RUN to a positive int only if you want a hard cap.
+    Default cap is ``DEFAULT_FACEBOOK_MAX_PER_RUN`` per run (A1 before A2 within each
+    edition). Set ``FACEBOOK_MAX_PER_RUN=0`` for no cap, or a higher positive int.
     """
     load_env()
     creds = _creds()
@@ -175,8 +251,7 @@ def post_pending(*, limit: int | None = None, lookback_days: int | None = None) 
         return {"ok": False, "skipped": "no_credentials", "posted": 0}
 
     if limit is None:
-        raw = (os.getenv("FACEBOOK_MAX_PER_RUN") or "0").strip()
-        limit = int(raw) if raw else 0
+        limit = _max_per_run_from_env()
     if lookback_days is None:
         lookback_days = int(os.getenv("FACEBOOK_LOOKBACK_DAYS", "14"))
 
