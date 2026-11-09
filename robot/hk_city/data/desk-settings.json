@@ -1,6 +1,6 @@
 {
   "news_limit": 160,
-  "max_article_drafts": 10,
+  "max_article_drafts": 30,
   "ledger_lookback_days": 45,
   "pillars": {
     "property": true,

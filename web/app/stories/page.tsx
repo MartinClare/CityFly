@@ -2,7 +2,7 @@ import Link from "next/link";
 import { formatEditionDate, loadMagazine } from "@/lib/content";
 
 export const metadata = { title: "往期" };
-export const dynamic = "force-dynamic";
+export const revalidate = 30;
 
 export default async function StoriesIndexPage() {
   const { stories, editions } = await loadMagazine();

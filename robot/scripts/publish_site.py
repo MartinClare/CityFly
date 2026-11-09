@@ -75,17 +75,13 @@ def _resolve_hero(day_dir: Path, meta: dict[str, Any]) -> Path | None:
         if raw and "/hk_city/" in str(raw) and "/robot/" not in str(raw):
             candidates.append(ROOT / "hk_city" / str(raw).split("/hk_city/", 1)[-1])
 
-    # Fallback: any file named after the slug in images/ (skip FB-only siblings)
+    # Fallback: any file named after the slug in images/
     if slug:
         images = day_dir / "images"
         if images.is_dir():
             for ext in (".jpg", ".jpeg", ".png", ".webp", ".gif"):
                 candidates.append(images / f"{slug}{ext}")
-            for p in sorted(images.glob(f"{slug}.*")):
-                name = p.name.lower()
-                if name.endswith(".fb.jpg") or ".fb-base." in name or name.endswith(".fb.png"):
-                    continue
-                candidates.append(p)
+            candidates.extend(sorted(images.glob(f"{slug}.*")))
 
     # Markdown ![hero](images/...) reference
     md_path = day_dir / f"{slug}.md"
@@ -209,47 +205,8 @@ def _pick_edition(stories: list[dict[str, Any]], date: str) -> dict[str, Any]:
     }
 
 
-def _fb_callout_src(day_dir: Path, slug: str) -> Path | None:
-    """FB-only callout sibling next to the web hero, if present."""
-    images = day_dir / "images"
-    for name in (f"{slug}.fb.jpg", f"{slug}.fb.jpeg", f"{slug}.fb.png"):
-        p = images / name
-        if p.is_file():
-            return p
-    return None
-
-
-def _teaser_from_body(body: str, *, max_cjk: int = 120) -> str:
-    """Short plain teaser for index cards when body_md is omitted from magazine.json."""
-    text = _strip_model_comment(body or "")
-    text = re.sub(r"^#+\s+.+$", "", text, flags=re.M)
-    text = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", text)
-    text = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", text)
-    text = re.sub(r"[*`_>#]+", "", text)
-    out = ""
-    cjk = 0
-    for ch in text:
-        if ch in "\n\r":
-            if out and not out.endswith(" "):
-                out += " "
-            continue
-        out += ch
-        if "\u4e00" <= ch <= "\u9fff":
-            cjk += 1
-            if cjk >= max_cjk:
-                return out.rstrip() + "……"
-    return out.strip()
-
-
-def _story_row(
-    s: dict[str, Any],
-    hero: str | None,
-    fb_hero: str | None = None,
-    *,
-    include_body: bool = True,
-) -> dict[str, Any]:
-    body = s.get("body_md") or ""
-    row: dict[str, Any] = {
+def _story_row(s: dict[str, Any], hero: str | None) -> dict[str, Any]:
+    return {
         "slug": s["slug"],
         "as_of": s["as_of"],
         "pillar": s["pillar"],
@@ -258,21 +215,16 @@ def _story_row(
         "dek": s["dek"],
         "placement": s["placement"],
         "hero": hero,
-        "fb_hero": fb_hero,
-        "teaser": _teaser_from_body(body),
+        "body_md": s["body_md"],
         "og_title": s["og_title"],
         "og_description": s["og_description"],
-    }
-    # Full article payload only — keep magazine.json under Next.js 2MB data-cache.
-    if include_body:
-        row["body_md"] = body
-        row["disclaimer_required"] = s["disclaimer_required"]
-        row["sources"] = [
+        "disclaimer_required": s["disclaimer_required"],
+        "sources": [
             {"title": x.get("title"), "url": x.get("url"), "source": x.get("source")}
             for x in s["sources"]
             if isinstance(x, dict)
-        ]
-    return row
+        ],
+    }
 
 
 def _empty_edition() -> dict[str, Any]:
@@ -286,87 +238,43 @@ def _empty_edition() -> dict[str, Any]:
     }
 
 
-def _resolve_public_heroes(
-    s: dict[str, Any],
-    *,
-    hero_base: str | None,
-) -> tuple[str | None, str | None]:
-    hero = None
-    fb_hero = None
-    src = s.get("_hero_src")
-    if src:
-        dest_name = f"{s['slug']}{src.suffix.lower()}"
-        if hero_base:
-            hero = f"{hero_base.rstrip('/')}/published/images/{dest_name}"
-        else:
-            hero = f"/heroes/{dest_name}"
-    fb_src = _fb_callout_src(s["_day_dir"], s["slug"])
-    if fb_src:
-        fb_name = fb_src.name
-        if hero_base:
-            fb_hero = f"{hero_base.rstrip('/')}/published/images/{fb_name}"
-        else:
-            fb_hero = f"/heroes/{fb_name}"
-    return hero, fb_hero
-
-
 def magazine_payload(*, hero_base: str | None = None) -> dict[str, Any]:
-    """Approved stories for the public site. hero_base makes image URLs absolute.
-
-    Magazine index keeps teaser + body for the recent window so the live www
-    (until loadStory ships) still has article text. Older full stories remain
-    on /published/stories/{slug}.json.
-    """
-    from datetime import datetime, timedelta
-
+    """Approved stories for the public site. hero_base makes image URLs absolute."""
     approved = _load_approved(None)
     stories_out: list[dict[str, Any]] = []
     for s in approved:
-        hero, fb_hero = _resolve_public_heroes(s, hero_base=hero_base)
-        stories_out.append(_story_row(s, hero, fb_hero, include_body=True))
+        hero = None
+        src = s["_hero_src"]
+        if src:
+            dest_name = f"{s['slug']}{src.suffix.lower()}"
+            if hero_base:
+                hero = f"{hero_base.rstrip('/')}/published/images/{dest_name}"
+            else:
+                hero = f"/heroes/{dest_name}"
+        stories_out.append(_story_row(s, hero))
     if not stories_out:
         return {"stories": [], "edition": _empty_edition(), "editions": {}}
     by_day: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for s in stories_out:
         by_day[s["as_of"]].append(s)
     latest = sorted(by_day.keys())[-1]
-    # Cap window so payload stays deployable; per-story JSON covers older slugs.
-    try:
-        cut = (datetime.strptime(latest, "%Y-%m-%d") - timedelta(days=14)).strftime("%Y-%m-%d")
-    except ValueError:
-        cut = latest
-    stories_out = [s for s in stories_out if s["as_of"] >= cut]
-    editions = {d: _pick_edition(approved, d) for d in by_day if d >= cut}
     return {
         "stories": stories_out,
         "edition": _pick_edition(approved, latest),
-        "editions": editions,
+        "editions": {d: _pick_edition(approved, d) for d in by_day},
     }
 
 
-def story_payload(slug: str, *, hero_base: str | None = None) -> dict[str, Any] | None:
-    """One approved story with full body_md, or None."""
-    if not slug or "/" in slug or ".." in slug:
-        return None
-    for s in _load_approved(None):
-        if s.get("slug") != slug:
-            continue
-        hero, fb_hero = _resolve_public_heroes(s, hero_base=hero_base)
-        return _story_row(s, hero, fb_hero, include_body=True)
-    return None
-
-
 def approved_hero_file(name: str) -> Path | None:
-    """Image file for an approved story (web hero or FB callout), or None."""
+    """Image file for an approved story, or None if the name is not published."""
     if not name or "/" in name or ".." in name:
         return None
     for s in _load_approved(None):
         src = s["_hero_src"]
-        if src and f"{s['slug']}{src.suffix.lower()}" == name and src.exists():
+        if not src:
+            continue
+        if f"{s['slug']}{src.suffix.lower()}" == name and src.exists():
             return src
-        fb = _fb_callout_src(s["_day_dir"], s["slug"])
-        if fb and fb.name == name and fb.exists():
-            return fb
     return None
 
 
@@ -383,19 +291,13 @@ def publish(day: str | None = None) -> dict[str, Any]:
     stories_out: list[dict[str, Any]] = []
     for s in approved:
         hero_rel = None
-        fb_rel = None
         src = s["_hero_src"]
         if src:
             dest_name = f"{s['slug']}{src.suffix.lower()}"
             dest = heroes_dir / dest_name
             shutil.copy2(src, dest)
             hero_rel = f"/heroes/{dest_name}"
-        fb_src = _fb_callout_src(s["_day_dir"], s["slug"])
-        if fb_src:
-            fb_dest = heroes_dir / fb_src.name
-            shutil.copy2(fb_src, fb_dest)
-            fb_rel = f"/heroes/{fb_src.name}"
-        stories_out.append(_story_row(s, hero_rel, fb_rel))
+        stories_out.append(_story_row(s, hero_rel))
 
     by_day: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for s in stories_out:

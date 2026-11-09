@@ -3,7 +3,7 @@ display_name: Hong Kong City-Change Magazine
 timezone: Asia/Hong_Kong
 report_language: zh-HK
 news_limit: 160
-max_article_drafts: 10
+max_article_drafts: 12
 ledger_lookback_days: 45
 
 pillars:
@@ -227,21 +227,6 @@ collectors:
         kind: rss
         tier: 3
         policy: rss_only
-      - name: 星島頭條
-        url: https://www.stheadline.com/rss
-        kind: rss
-        tier: 3
-        policy: rss_only
-      - name: 香港01 港聞
-        url: https://web-data.api.hk01.com/v2/page/zone/1
-        kind: hk01_json
-        tier: 3
-        policy: metadata_only
-      - name: 香港01 最新
-        url: https://web-data.api.hk01.com/v2/page/latest
-        kind: hk01_json
-        tier: 3
-        policy: metadata_only
 
   consultancy:
     limit: 80
@@ -310,7 +295,6 @@ collectors:
         kind: rss
         tier: 2
         policy: rss_only
-      # Government / park desks: crawled and keepable, ranked below big-brand tech.
       - name: 數字政策辦公室
         url: https://www.digitalpolicy.gov.hk/tc/
         kind: html

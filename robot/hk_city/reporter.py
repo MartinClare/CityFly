@@ -43,71 +43,50 @@ BRIEFING_SYSTEM = """你是香港城市變化雜誌 City Fly 的日報主編。�
    ## 明日要盯
 """
 
-ARTICLE_SYSTEM = """你是 City Sight（City Fly）的雜誌撰稿。聲線接近 Bloomberg CityLab / The Atlantic：冷靜、具體。
-全文必須用繁體書面中文（雜誌散文），不是粵語口語書寫（避免以唔會／嚟／嘅／啲作預設語氣）。
-英文只保留專有名詞與讀者慣用的詞，例如 AI、WeChat、CCL、OpenAI。
-香港可以是場景或證據，但要把利害寫給更廣的中文讀者（生活、工作、出行、資產、城市建設）。
+ARTICLE_SYSTEM = """你是 City Fly 的雜誌撰稿。聲線接近 Bloomberg CityLab / The Atlantic：冷靜、具體；文字用香港口語繁體（廣東話寫法）。英文只在香港人慣用英文講嘅詞先用，例如 AI、WeChat、CCL、location。
 
 只寫稿。不要寫編輯室、研究過程、或你為什麼這樣寫。
-不要印出「現場／機會／機制／Standfirst／（預測）」等編輯室標籤。
 
 不准：
 - 發明人名、對話、街道場面、星期二早上
 - 發明數字、日期、未見於來源的傳聞
-- 在正文解釋「來源沒有」「現有材料看不到」「本文不寫」「故不採用」「按現有材料推想」「來源撐得住」「這是宣稱不是結論」「下一步要核對的文件」
+- 在正文解釋「來源沒有」「現有材料睇唔到」「本文不寫」「故不採用」「按現有材料推想」「來源撐得住」「這是宣稱不是結論」「下一步要核對的文件」
 - 讚政策；叫人買、賣、租、入市
-- 把任何一家媒體的標題當自己的標題；不要用「據 XX 報道」串起全文
 
 來源沒有的細節，略過。不要向讀者交代你略過了什麼。
 官員怎麼說，就寫他怎麼說。讀者自己判斷。
 
-結構（寫進敘事，不要印標籤）：
-1. 第一行：# 自寫的書面中文 hook 標題（反差／數字／張力）
-2. 第二段：一句書面中文 dek（誰／何處／什麼數字）——回答標題張力的事實線
-3. 開頭 80–120 字：用來源裡的人、地、數或決定製造問題感
-4. 中段推進：多來源時至少織入兩家事實或數字對照；寫清什麼在變、利害何在
-5. 收束：回答開頭問題；標明已證實／分析／可能／未證實傳聞；一句「若此，下一步可能是…」條件展望（日期、機制、誰受影響、什麼會推翻傳聞），勿虛構
-6. 正文 700–1000 字（只計中文字）。最多 3 個為此篇新造的小標題
-7. 文末 ## 來源 + 指定免責聲明
+結構：
+1. 一句 dek，不要印 Standfirst
+2. 用來源裡的人、地、數、決定開頭
+3. 正文 700–1000 字（只計中文字）。Facebook／網頁一篇這個長度。少過 700 字就未完。最多 3 個為此篇新造的小標題
+4. 文末 ## 來源 + 指定免責聲明
 """
 
 ADVANCED_TECH_ARTICLE_SYSTEM = """你是 City Sight（City Fly）的雜誌撰稿。聲線接近 Bloomberg CityLab / The Atlantic：冷靜、具體。
-全文必須用繁體書面中文（雜誌散文），不是粵語口語書寫。英文只保留專有名詞與讀者慣用的詞，例如 AI、OpenAI、Tesla、CUDA。
-把技術寫成會怎樣改變普通人未來幾年的生活、工作、出行、電力、醫療、私隱或常用裝置——讀者不限於香港口語圈。
+全文必須用香港書面中文（繁體），不是粵語口語書寫。英文只保留專有名詞與讀者慣用的詞，例如 AI、OpenAI、Tesla、CUDA。
 
 來源標題是英文雜誌原題，只作事實來源，不可把英文原題當作中文標題貼上。
 
 只寫稿。不要寫編輯室、研究過程、或你為什麼這樣寫。
-不要印出「現場／機會／機制／Standfirst／（預測）」等編輯室標籤。
 
 不准：
 - 發明人名、對話、街道場面、星期二早上
 - 發明數字、日期、未見於來源的傳聞
 - 在正文解釋「來源沒有」「現有材料看不到」「本文不寫」「故不採用」「按現有材料推想」「來源撐得住」「這是宣稱不是結論」「下一步要核對的文件」
 - 讚政策；叫人買、賣、租、入市
-- 用「據 XX 報道」串起全文
 
 來源沒有的細節，略過。不要向讀者交代你略過了什麼。
 
-結構（寫進敘事，不要印標籤）：
+結構：
 1. 第一行：# 自寫的書面中文標題（面向生活會怎樣變，不要翻譯腔）
 2. 第二段：一句書面中文 dek，不要印 Standfirst
-3. 開頭製造問題感；多來源時織入至少兩家事實
-4. 收束含條件展望「若此，下一步可能是…」（標明可能／未證實）；勿虛構
-5. 正文 700–1000 字（只計中文字）。少過 700 字就未完。最多 3 個為此篇新造的小標題
-6. 文末 ## 來源 + 指定免責聲明
+3. 正文 700–1000 字（只計中文字）。少過 700 字就未完。最多 3 個為此篇新造的小標題
+4. 文末 ## 來源 + 指定免責聲明
 """
+
 MIN_ARTICLE_CJK = 700
 MAX_ARTICLE_CJK = 1000
-
-
-def _length_bounds(cand: dict[str, Any] | None = None) -> tuple[int, int]:
-    from hk_city.growth_formats import MAX_CJK, MIN_CJK, is_growth_format
-
-    fmt = (cand or {}).get("format") or ""
-    if is_growth_format(fmt):
-        return MIN_CJK.get(fmt, MIN_ARTICLE_CJK), MAX_CJK.get(fmt, MAX_ARTICLE_CJK)
-    return MIN_ARTICLE_CJK, MAX_ARTICLE_CJK
 
 
 class CityFlyReporter(BaseReporter):
@@ -127,7 +106,7 @@ class CityFlyReporter(BaseReporter):
             return llm.fallback_report(view)
         system, user = self.build_prompt(view, raw)
         try:
-            text = llm.chat(system, user, temperature=0.35, max_tokens=16000)
+            text = llm.chat(system, user, temperature=0.35, max_tokens=8000)
             if len(text) < 200:
                 raise RuntimeError("briefing too short")
             return text
@@ -159,24 +138,6 @@ class CityFlyReporter(BaseReporter):
             ranked = [c for c in ranked if (c.get("pillar") or "city") in allowed]
         candidates = _pick_interesting_mix(ranked, limit)
         already_today = _drafts_today(self.storage.as_of)
-        from hk_city.growth_formats import is_growth_format, mark_seed_drafted, seeds_due_today
-
-        growth_n = sum(1 for c in candidates if is_growth_format(c.get("format")))
-        if growth_n < 1:
-            used_seeds = {
-                str(r.get("growth_seed_id") or "")
-                for r in already_today
-                if r.get("growth_seed_id")
-            }
-            for seed_cand in seeds_due_today(as_of=self.storage.as_of, already=used_seeds):
-                if allowed and (seed_cand.get("pillar") or "city") not in allowed:
-                    continue
-                if candidates:
-                    candidates[-1] = seed_cand
-                else:
-                    candidates.append(seed_cand)
-                logger.info("Inject growth seed: %s", seed_cand.get("title"))
-                break
         packs = []
         for idx, cand in enumerate(candidates, start=1):
             if ledger.is_seen(cand, today=self.storage.as_of) or _same_story_today(cand, already_today):
@@ -187,27 +148,11 @@ class CityFlyReporter(BaseReporter):
             if off_brief_kind(cand.get("title") or "", cand.get("summary") or ""):
                 logger.info("Skip crime, disease, or death: %s", cand.get("title"))
                 continue
-            from hk_city.analyzers.classify import advanced_tech_headline_drop, is_future_life_tech
-
-            drop = advanced_tech_headline_drop(cand.get("title") or "", cand.get("summary") or "")
-            if drop == "geopolitics":
-                logger.info("Skip geopolitics in tech funnel: %s", cand.get("title"))
+            if cand.get("advanced_tech") and cand.get("future_life") is False:
+                logger.info("Skip overseas tech without future-life change: %s", cand.get("title"))
                 continue
-            # Tech pillar: future-life / big-brand first; gov PR allowed as lower-priority filler.
-            # Growth consumer formats may pass without future_life flag.
-            if cand.get("pillar") == "tech" or cand.get("advanced_tech"):
-                if (
-                    not is_future_life_tech(cand)
-                    and not cand.get("gov_tech_pr")
-                    and not is_growth_format(cand.get("format"))
-                ):
-                    logger.info("Skip tech without future-life / brand / gov-pr keep: %s", cand.get("title"))
-                    continue
             try:
-                meta = self._one_pack(idx, cand, view)
-                packs.append(meta)
-                if cand.get("growth_seed_id"):
-                    mark_seed_drafted(str(cand["growth_seed_id"]), self.storage.as_of)
+                packs.append(self._one_pack(idx, cand, view))
             except Exception as exc:
                 logger.exception("Draft pack failed for %s: %s", cand.get("title"), exc)
         return packs
@@ -238,9 +183,7 @@ class CityFlyReporter(BaseReporter):
             rel_image = f"images/{Path(hero['path']).name}"
         if rel_image and "![hero]" not in body and "![" not in body[:400]:
             credit = None
-            if hero.get("credit"):
-                credit = str(hero["credit"])
-            elif not hero.get("ai_generated"):
+            if not hero.get("ai_generated"):
                 credit = f"圖：來源附圖。{hero.get('credit') or ''}".strip()
             body = _inject_hero(body, rel_image, credit=credit)
         md_path = self.storage.write_draft_md(slug, body)
@@ -268,24 +211,6 @@ class CityFlyReporter(BaseReporter):
                 "kind": "illustration_or_map",
                 "proves": cand.get("title"),
             },
-            "synthesis": cand.get("synthesis")
-            or (
-                "multi_source"
-                if len(sources) >= 2
-                else (
-                    "single_authority"
-                    if (cand.get("future_life") or cand.get("advanced_tech") or cand.get("growth_seed_id"))
-                    else "single"
-                )
-            ),
-            "cluster_size": int(cand.get("cluster_size") or len(sources) or 1),
-            "interest": cand.get("interest"),
-            "entertainment": cand.get("entertainment"),
-            "future_life": cand.get("future_life"),
-            "advanced_tech": cand.get("advanced_tech"),
-            "gov_tech_pr": cand.get("gov_tech_pr"),
-            "score": cand.get("score"),
-            "growth_seed_id": cand.get("growth_seed_id"),
             "disclaimer_required": True,
             "article_path": str(md_path),
         }
@@ -296,17 +221,8 @@ class CityFlyReporter(BaseReporter):
     def _draft_article(self, cand: dict[str, Any], view: dict[str, Any], sources: list[dict[str, Any]]) -> str:
         if llm.available():
             try:
-                from hk_city.growth_formats import GROWTH_SYSTEM, growth_spine, is_growth_format
-
                 advanced = bool(cand.get("advanced_tech"))
-                growth = is_growth_format(cand.get("format"))
-                lo, hi = _length_bounds(cand)
-                if growth:
-                    system = GROWTH_SYSTEM
-                elif advanced:
-                    system = ADVANCED_TECH_ARTICLE_SYSTEM
-                else:
-                    system = ARTICLE_SYSTEM
+                system = ADVANCED_TECH_ARTICLE_SYSTEM if advanced else ARTICLE_SYSTEM
                 hook = cand.get("hook") or cand.get("title")
                 dek = cand.get("dek") or ""
                 slim = {
@@ -323,92 +239,63 @@ class CityFlyReporter(BaseReporter):
                     "advanced_tech": advanced,
                     "future_life": cand.get("future_life"),
                 }
-                multi = len(sources) >= 2
-                overseas_tech = bool(
-                    advanced
-                    or cand.get("future_life")
-                    or cand.get("advanced_tech")
-                )
-                if growth:
-                    weave = growth_spine(str(cand.get("format") or ""))
-                    weave += (
-                        "第一行 # 標題必須是攻略／教學口吻（一文看清、……攻略、……怎麼選、……入門），"
-                        "不要寫成新聞報道標題。\n"
-                    )
-                    if multi:
-                        weave += "來源 angles 欄的數字／日期必須用上；可對照兩家，不要硬湊第二品牌。\n"
-                    else:
-                        weave += "單一權威來源（官網／品牌說明）即可，不要虛構第二來源。\n"
-                    spine = ""
-                elif multi:
-                    weave = (
-                        "這是多來源合成稿：至少織入兩家來源的事實或數字，寫成 City Sight 自己的角度，"
-                        "不要複述任何一家的標題結構。各來源 angles 欄的數字／日期必須用上。\n"
-                    )
-                    spine = (
-                        "結構：自寫 hook 標題 → dek → 開頭張力 → 推進 → 收束並含條件展望"
-                        "「若此，下一步可能是…」（標明可能／未證實）。不要印編輯室標籤。\n"
-                    )
-                elif overseas_tech:
-                    weave = (
-                        "這是海外或單一權威來源的科技特稿：不必硬湊第二家媒體，也不要虛構第二來源。"
-                        "用這一則來源的事實與 angles，寫成 City Sight 自己的生活／工作向度；"
-                        "說明普通人未來幾年會怎樣受影響。\n"
-                    )
-                    spine = (
-                        "結構：自寫 hook 標題 → dek → 開頭張力 → 推進 → 收束並含條件展望"
-                        "「若此，下一步可能是…」（標明可能／未證實）。不要印編輯室標籤。\n"
+                if advanced:
+                    user = (
+                        f"寫一篇可以刊登的香港書面中文雜誌特稿。正文必須 {MIN_ARTICLE_CJK}–{MAX_ARTICLE_CJK} 字"
+                        "（只計中文字，不計標點與來源）。少過 700 字當未寫完。\n"
+                        "第一行必須是你自寫的書面中文標題：# ……\n"
+                        "不要把英文原題當標題；英文原題只在來源資料裡。\n"
+                        "第二段用一句書面中文 dek（不要印「Standfirst」這個字）。\n"
+                        "寫清這項技術怎樣改變普通人未來幾年的生活、工作、出行、電力、醫療、私隱或常用裝置。\n"
+                        "來源 summary 裡每個數字、日期、人名、地名都要用。不要因為材料短就寫兩段交差。\n"
+                        "只寫下列來源裡有的事。不要虛構。不要解釋你的寫作決定。\n"
+                        f"候選：{json.dumps(slim, ensure_ascii=False)}\n"
+                        f"來源：{json.dumps(sources, ensure_ascii=False)}\n"
+                        f"文末必須加上：{DISCLAIMER}\n"
                     )
                 else:
-                    weave = "來源 summary 與 angles 裡的數字、日期、人名、地名都要用。\n"
-                    spine = (
-                        "結構：自寫 hook 標題 → dek → 開頭張力 → 推進 → 收束並含條件展望"
-                        "「若此，下一步可能是…」（標明可能／未證實）。不要印編輯室標籤。\n"
+                    user = (
+                        f"寫一篇可以刊登的香港口語繁體雜誌特稿。正文必須 {MIN_ARTICLE_CJK}–{MAX_ARTICLE_CJK} 字"
+                        "（只計中文字，唔計標點同來源）。少過 700 字當未寫完。\n"
+                        f"第一行必須係標題：# {hook}\n"
+                        f"第二段用一句 dek（唔好印「Standfirst」呢個字）：{dek}\n"
+                        "來源 summary 裡每個數字、日期、人名、地名都要用。唔好因為材料短就寫兩段交差。\n"
+                        "只寫下列來源裡有的事。不要虛構。不要解釋你的寫作決定。\n"
+                        f"候選：{json.dumps(slim, ensure_ascii=False)}\n"
+                        f"來源：{json.dumps(sources, ensure_ascii=False)}\n"
+                        f"文末必須加上：{DISCLAIMER}\n"
                     )
-                user = (
-                    f"寫一篇可以刊登的繁體書面中文雜誌特稿。正文必須 {lo}–{hi} 字"
-                    "（只計中文字，不計標點與來源）。\n"
-                    "第一行必須是你自寫的書面中文標題：# ……\n"
-                    "不要把英文原題當標題；英文原題只在來源資料裡。\n"
-                    f"第二段用一句書面中文 dek（不要印「Standfirst」）：{dek or '（自寫一句事實線）'}\n"
-                    f"{weave}{spine}"
-                    "只寫下列來源裡有的事。不要虛構。不要解釋你的寫作決定。\n"
-                    f"候選：{json.dumps(slim, ensure_ascii=False)}\n"
-                    f"來源：{json.dumps(sources, ensure_ascii=False)}\n"
-                    f"文末必須加上：{DISCLAIMER}\n"
-                )
-                body = llm.chat(system, user, temperature=0.55, max_tokens=16000)
-                temps = (0.6, 0.65)
-                for attempt in range(3):
-                    reason = _article_reject_reason(body, advanced=advanced, cand=cand)
-                    if not reason:
-                        break
+                body = llm.chat(system, user, temperature=0.55, max_tokens=8000)
+                n = _cjk_len(body)
+                if n < MIN_ARTICLE_CJK or _looks_like_worksheet(body) or (
+                    advanced and _heading_still_english(body)
+                ):
+                    retry = (
+                        f"\n上一稿得 {n} 字。重寫成雜誌特稿，必須寫滿 {MIN_ARTICLE_CJK} 字。"
+                        "小標題要為此篇新造。來源裡的數字全部寫入正文。\n"
+                    )
+                    if advanced:
+                        retry += "標題必須是書面中文，不可保留英文原題。\n"
+                    body = llm.chat(system, user + retry, temperature=0.6, max_tokens=8000)
                     n = _cjk_len(body)
-                    if attempt >= 2:
-                        raise RuntimeError(f"article rejected ({reason}, {n} 字)")
-                    if reason == "too_long":
-                        nudge = (
-                            f"\n上一稿得 {n} 字，太長。請壓縮成 {lo}–{hi} 字"
-                            "雜誌特稿，保留關鍵數字與來源事實，刪去重複與推論注腳。\n"
+                    if n < MIN_ARTICLE_CJK or _looks_like_worksheet(body) or (
+                        advanced and _heading_still_english(body)
+                    ):
+                        retry2 = (
+                            f"\n上一稿仍然得 {n} 字。再寫一次，正文必須 {MIN_ARTICLE_CJK}–{MAX_ARTICLE_CJK} 字。"
+                            "把來源 summary 拆開寫：人、地、數、決定各寫一段。不要發明。\n"
                         )
-                    elif reason == "too_short":
-                        nudge = (
-                            f"\n上一稿得 {n} 字。重寫成雜誌特稿，必須寫滿 {lo} 字。"
-                            "小標題要為此篇新造。來源裡的數字全部寫入正文。\n"
-                        )
-                    elif reason == "english_title":
-                        nudge = (
-                            f"\n上一稿標題仍是英文或幾乎無中文（{n} 字正文）。"
-                            "第一行 # 標題必須是書面中文，不可照抄英文原題。\n"
-                        )
-                    else:
-                        nudge = (
-                            f"\n上一稿不像成品（{n} 字）。再寫一次可刊登雜誌特稿，"
-                            f"正文必須 {lo}–{hi} 字，不要工作紙格式。\n"
-                        )
-                    if (advanced or growth) and reason != "english_title":
-                        nudge += "標題必須是書面中文，不可保留英文原題。\n"
-                    body = llm.chat(system, user + nudge, temperature=temps[attempt], max_tokens=16000)
+                        if advanced:
+                            retry2 += "第一行 # 標題必須含中文，且不得照抄英文原題。\n"
+                        body = llm.chat(system, user + retry2, temperature=0.65, max_tokens=8000)
+                        n = _cjk_len(body)
+                        if (
+                            n < MIN_ARTICLE_CJK
+                            or n > MAX_ARTICLE_CJK + 80
+                            or _looks_like_worksheet(body)
+                            or (advanced and _heading_still_english(body))
+                        ):
+                            raise RuntimeError(f"article still short, worksheet, or English title ({n} 字)")
                 return f"{body.strip()}\n"
             except Exception as exc:
                 logger.exception("Article LLM failed: %s", exc)
@@ -418,19 +305,6 @@ class CityFlyReporter(BaseReporter):
     def _maybe_hero(self, slug: str, cand: dict[str, Any], body: str) -> dict[str, Any]:
         if self.config.get("skip_images"):
             return {"ok": False, "reason": "skip_images"}
-        from hk_city.growth_formats import INFOGRAPHIC_CREDIT, infographic_prompt_for, is_growth_format
-
-        # Growth formats: prefer kie.ai infographic over press crops.
-        if is_growth_format(cand.get("format")) and images.available():
-            dest = self.storage.draft_image_path(slug, ".png")
-            try:
-                hero = images.generate_illustration(infographic_prompt_for(cand, body), dest)
-                if hero.get("ok"):
-                    hero["visual_kind"] = "infographic"
-                    hero["credit"] = INFOGRAPHIC_CREDIT
-                    return hero
-            except Exception as exc:
-                logger.warning("Growth infographic failed: %s", exc)
         dest = self.storage.draft_image_path(slug, ".jpg")
         image_url = cand.get("image_url")
         if not image_url:
@@ -438,7 +312,7 @@ class CityFlyReporter(BaseReporter):
                 if src.get("image_url"):
                     image_url = src["image_url"]
                     break
-        if image_url and not images.is_aggregator_page(image_url):
+        if image_url:
             credit = f"{cand.get('source') or ''} {cand.get('link') or ''}".strip() or None
             feed_hero = images.download_direct_image(image_url, dest, credit=credit)
             if feed_hero and feed_hero.get("ok"):
@@ -450,9 +324,7 @@ class CityFlyReporter(BaseReporter):
                 urls.append(link)
         if cand.get("link"):
             urls.insert(0, cand["link"])
-        # Never scrape Yahoo/Google News/MSN pages for heroes (related-story thumbs).
-        press_urls = [u for u in urls if not images.is_aggregator_page(u)]
-        press = images.fetch_press_image(press_urls, dest) if press_urls else None
+        press = images.fetch_press_image(urls, dest)
         if press and press.get("ok"):
             return press
         if not images.available():
@@ -493,36 +365,6 @@ def _briefing_context(view: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-_ANGLE_RE = re.compile(
-    r"("
-    r"\d{4}年\d{1,2}月\d{1,2}日|"
-    r"\d{1,2}月\d{1,2}日|"
-    r"20\d{2}年|"
-    r"\d{1,3}(?:,\d{3})+(?:\.\d+)?|"
-    r"\d+(?:\.\d+)?%|"
-    r"\d+(?:\.\d+)?\s*(?:億|萬|千|倍|宗|伙|個|人|元|港元|美元|公里|米|小時)"
-    r")"
-)
-
-
-def _extract_angles(text: str, *, limit: int = 8) -> list[str]:
-    """Pull salient numbers/dates from a source blurb for the drafting model."""
-    blob = re.sub(r"\s+", " ", (text or "").strip())
-    if not blob:
-        return []
-    hits: list[str] = []
-    seen: set[str] = set()
-    for m in _ANGLE_RE.finditer(blob):
-        tok = m.group(0).strip()
-        if not tok or tok in seen:
-            continue
-        seen.add(tok)
-        hits.append(tok)
-        if len(hits) >= limit:
-            break
-    return hits
-
-
 def _source_bundle(cand: dict[str, Any]) -> list[dict[str, Any]]:
     rows = []
     seen: set[str] = set()
@@ -534,21 +376,19 @@ def _source_bundle(cand: dict[str, Any]) -> list[dict[str, Any]]:
         if not link or link in seen:
             continue
         seen.add(link)
-        summary = (src.get("summary") or "")[:800]
-        title = src.get("title") or ""
         row = {
-            "title": title,
+            "title": src.get("title"),
             "url": link,
             "source": src.get("source"),
             "tier": src.get("tier"),
             "published": src.get("published"),
-            "summary": summary,
-            "angles": _extract_angles(f"{title} {summary}"),
+            "summary": (src.get("summary") or "")[:800],
         }
         if src.get("image_url"):
             row["image_url"] = src["image_url"]
         rows.append(row)
     return rows
+
 
 def _packable(cand: dict[str, Any]) -> bool:
     if cand.get("recommendation") == "discard":
@@ -557,13 +397,6 @@ def _packable(cand: dict[str, Any]) -> bool:
         return False
     if int(cand.get("interest") or 0) < 3:
         return False
-    if cand.get("pillar") == "tech" or cand.get("advanced_tech"):
-        from hk_city.analyzers.classify import advanced_tech_headline_drop, is_future_life_tech
-
-        if advanced_tech_headline_drop(cand.get("title") or "", cand.get("summary") or "") == "geopolitics":
-            return False
-        if not is_future_life_tech(cand) and not cand.get("gov_tech_pr"):
-            return False
     if cand.get("recommendation") == "publish":
         return True
     tier = int(cand.get("tier") or 5)
@@ -604,236 +437,28 @@ def _same_story_today(cand: dict[str, Any], existing: list[dict[str, Any]]) -> b
     return any(similar(probe, row) for row in existing)
 
 
-_LATIN_STOP = {
-    "the", "and", "for", "with", "from", "this", "that", "are", "was", "were",
-    "will", "have", "has", "been", "into", "over", "under", "about", "after",
-    "before", "their", "they", "them", "than", "then", "also", "just", "more",
-    "most", "such", "only", "year", "years", "next", "first", "new", "news",
-    "says", "said", "near", "amid", "user", "users", "price", "day", "days",
-    "can", "could", "would", "should", "may", "might", "across", "against",
-    "between", "through", "while", "where", "when", "what", "which", "who",
-    "how", "why", "its", "his", "her", "our", "your", "out", "off", "via",
-}
-_CJK_STOP = {
-    "香港", "今日", "表示", "報道", "新聞", "可能", "一個", "我們", "記者", "昨日",
-    "明天", "公司", "市場", "發展", "政府", "有關", "以及", "因為", "但是", "如果",
-    "可以", "已經", "進行", "工作", "問題", "情況", "包括", "同時", "目前", "今年",
-    "去年", "萬元", "美元", "人民幣", "港元", "指出", "認為", "強調", "公布", "推出",
-    "提供", "相關", "方面", "部門", "市民", "本港", "本地", "國際", "最新", "繼續",
-}
-# High-signal 2-char entities that should count as cousin anchors
-_CJK_ENTITY_BI = {
-    "銀主", "新盤", "居屋", "公屋", "樓花", "加息", "減息", "港鐵", "東涌", "西九",
-    "北部", "創科", "恒指", "美團", "騰訊", "阿里", "高鐵", "機場", "交吉", "凶宅",
-}
-
-
-def _theme_tokens(cand: dict[str, Any]) -> tuple[set[str], set[str]]:
-    """Title+district tokens only (summary is too noisy for cousin merge).
-
-    Returns (all_tokens, anchors) where anchors are brands / longer entities.
-    """
-    blob = f"{cand.get('title') or ''} {cand.get('district') or ''}"
-    toks: set[str] = set()
-    anchors: set[str] = set()
-    for m in re.finditer(r"[A-Za-z][A-Za-z0-9+.\-]{1,}", blob):
-        w = m.group(0).lower().strip(".")
-        if len(w) < 3 or w in _LATIN_STOP:
-            continue
-        toks.add(w)
-        if len(w) >= 4:
-            anchors.add(w)
-    cjk = re.findall(r"[\u4e00-\u9fff]", blob)
-    for i in range(len(cjk) - 1):
-        bi = cjk[i] + cjk[i + 1]
-        if bi in _CJK_STOP:
-            continue
-        toks.add(bi)
-        if bi in _CJK_ENTITY_BI:
-            anchors.add(bi)
-    for i in range(len(cjk) - 2):
-        tri = cjk[i] + cjk[i + 1] + cjk[i + 2]
-        if any(tri[j : j + 2] in _CJK_STOP for j in range(2)):
-            continue
-        toks.add(tri)
-        anchors.add(tri)
-    district = (cand.get("district") or "").strip()
-    if district:
-        anchors.add(district)
-        toks.add(district)
-    return toks, anchors
-
-
-def _cousin_pair(a: dict[str, Any], b: dict[str, Any]) -> bool:
-    """Related-but-not-duplicate: mid title similarity or shared entity/theme cues."""
-    from difflib import SequenceMatcher
-
-    if (a.get("pillar") or "city") != (b.get("pillar") or "city"):
-        return False
-    ta = ledger.title_key(a.get("title") or a.get("hook"))
-    tb = ledger.title_key(b.get("title") or b.get("hook"))
-    if len(ta) >= 8 and len(tb) >= 8:
-        ratio = SequenceMatcher(None, ta, tb).ratio()
-        if ratio >= ledger.SIMILAR:
-            return False  # already same-event cluster territory
-        if 0.58 <= ratio < ledger.SIMILAR:
-            return True
-    toks_a, anc_a = _theme_tokens(a)
-    toks_b, anc_b = _theme_tokens(b)
-    shared = toks_a & toks_b
-    shared_anc = anc_a & anc_b
-    # Same district + real title overlap
-    if (
-        a.get("district")
-        and a.get("district") == b.get("district")
-        and len(shared) >= 2
-    ):
-        return True
-    # Need a real entity/brand/trigram anchor, not three weak news bigrams
-    if shared_anc and len(shared) >= 2:
-        return True
-    return len(shared_anc) >= 2
-
-
-def _merge_cousin_candidates(ranked: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Collapse related cousins (max 3) into one pack with unioned sources."""
-    pool = [dict(c) for c in ranked if _packable(c)]
-    pool.sort(
-        key=lambda c: (
-            0 if c.get("gov_tech_pr") else 1,
-            len(c.get("sources") or []),
-            int(c.get("interest") or 0),
-            float(c.get("score") or 0),
-        ),
-        reverse=True,
-    )
-    merged: list[dict[str, Any]] = []
-    used: set[int] = set()
-    for i, primary in enumerate(pool):
-        if i in used:
-            continue
-        group = [primary]
-        used.add(i)
-        for j, other in enumerate(pool):
-            if j in used or len(group) >= 3:
-                continue
-            if any(_cousin_pair(g, other) for g in group):
-                group.append(other)
-                used.add(j)
-        if len(group) == 1:
-            row = primary
-            nsrc = len(row.get("sources") or []) or (1 if row.get("link") else 0)
-            row.setdefault("cluster_size", max(1, nsrc))
-            if nsrc >= 2 and not row.get("synthesis"):
-                row["synthesis"] = "multi_source"
-            merged.append(row)
-            continue
-        # Highest-score row stays primary; union sources
-        group.sort(
-            key=lambda c: (int(c.get("interest") or 0), float(c.get("score") or 0)),
-            reverse=True,
-        )
-        head = dict(group[0])
-        seen_links: set[str] = set()
-        sources: list[dict[str, Any]] = []
-        for g in group:
-            for src in g.get("sources") or [g]:
-                link = (src.get("link") or src.get("url") or "").strip()
-                if link and link in seen_links:
-                    continue
-                if link:
-                    seen_links.add(link)
-                sources.append(src if isinstance(src, dict) else g)
-            link = (g.get("link") or g.get("url") or "").strip()
-            if link and link not in seen_links:
-                seen_links.add(link)
-                sources.append(
-                    {
-                        "title": g.get("title"),
-                        "link": link,
-                        "source": g.get("source"),
-                        "summary": g.get("summary"),
-                        "tier": g.get("tier"),
-                    }
-                )
-        head["sources"] = sources
-        head["cluster_size"] = max(len(sources), len(group))
-        head["synthesis"] = "cousin_feature"
-        # Prefer multi-source packs in later ranking
-        head["score"] = float(head.get("score") or 0) + min(3, len(sources) - 1) * 0.8
-        merged.append(head)
-    return merged
-
-
-def _is_overseas_tech(cand: dict[str, Any]) -> bool:
-    """Future-life / advanced tech often arrives as one authoritative outlet (Unwire, brand blog)."""
-    return bool(cand.get("future_life") or cand.get("advanced_tech"))
-
-
 def _pick_interesting_mix(ranked: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
-    from hk_city.growth_formats import is_growth_format
-
-    pool = _merge_cousin_candidates(ranked)
-
-    def _rank_key(c: dict[str, Any]) -> tuple:
-        multi = c.get("synthesis") in {"multi_source", "cousin_feature"} or len(c.get("sources") or []) >= 2
-        # Local HK stories: prefer multi-source. Overseas tech: single authority is fine —
-        # don't let a thin two-outlet local cluster outrank a strong Unwire/brand piece.
-        multi_boost = 0 if _is_overseas_tech(c) else (1 if multi else 0)
-        growth_boost = 1 if is_growth_format(c.get("format")) else 0
-        return (
-            0 if c.get("gov_tech_pr") else 1,
-            1 if _is_overseas_tech(c) else 0,
-            growth_boost,
-            multi_boost,
-            int(c.get("interest") or 0),
-            float(c.get("score") or 0),
-        )
-
-    # Future-life tech first; light growth boost; multi-source for non-overseas; then interest.
-    pool.sort(key=_rank_key, reverse=True)
+    pool = [c for c in ranked if _packable(c)]
+    pool.sort(key=lambda c: (int(c.get("interest") or 0), float(c.get("score") or 0)), reverse=True)
     picked: list[dict[str, Any]] = []
     pillars: set[str] = set()
     officials = 0
-    gov_tech = 0
-    growth_fmts: set[str] = set()
     for cand in pool:
         if len(picked) >= limit:
             break
         pillar = cand.get("pillar") or "city"
-        fmt = cand.get("format") or ""
         if pillar in pillars and len(picked) < limit - 1:
             continue
-        # At most one of each growth format per draft run
-        if is_growth_format(fmt):
-            if fmt in growth_fmts or len(growth_fmts) >= 2:
-                continue
         if cand.get("officials_talk"):
             if officials >= 1:
                 continue
             officials += 1
-        # Cap government tech PR so it never crowds out the edition.
-        if cand.get("gov_tech_pr"):
-            if gov_tech >= 1:
-                continue
-            gov_tech += 1
         pillars.add(pillar)
-        if is_growth_format(fmt):
-            growth_fmts.add(fmt)
         picked.append(cand)
     if len(picked) < limit:
         for cand in pool:
             if cand in picked:
                 continue
-            fmt = cand.get("format") or ""
-            if is_growth_format(fmt) and (fmt in growth_fmts or len(growth_fmts) >= 2):
-                continue
-            if cand.get("gov_tech_pr") and gov_tech >= 1:
-                continue
-            if cand.get("gov_tech_pr"):
-                gov_tech += 1
-            if is_growth_format(fmt):
-                growth_fmts.add(fmt)
             picked.append(cand)
             if len(picked) >= limit:
                 break
@@ -913,72 +538,29 @@ def _looks_like_worksheet(markdown: str) -> bool:
     return sum(1 for token in _WORKSHEET_HEADS if token in markdown) >= 2
 
 
-def _article_reject_reason(
-    markdown: str,
-    *,
-    advanced: bool = False,
-    cand: dict[str, Any] | None = None,
-) -> str | None:
-    """None when the draft is publishable length/shape; else a short reject code."""
-    lo, hi = _length_bounds(cand)
-    n = _cjk_len(markdown)
-    if n < lo:
-        return "too_short"
-    if n > hi + 80:
-        return "too_long"
-    if _looks_like_worksheet(markdown):
-        return "worksheet"
-    if advanced and _heading_still_english(markdown):
-        return "english_title"
-    return None
-
-
 def _standfirst(markdown: str) -> str:
     m = re.search(r"\*\*Standfirst：\*\*\s*(.+)", markdown)
     if m:
         return m.group(1).strip()
-
-    def _usable(p: str) -> bool:
-        s = p.strip()
-        if not s or s.startswith("#") or s.startswith("<!--") or s.startswith("!["):
-            return False
-        if s.startswith("*圖") or s.startswith("圖："):
-            return False
-        # Skip italic/bare source URLs that leaked into the body top
-        bare = re.sub(r"[*`_\[\]()]", "", s).strip()
-        if bare.startswith("http://") or bare.startswith("https://"):
-            return False
-        if len(re.findall(r"[\u4e00-\u9fff]", s)) < 8 and "http" in s:
-            return False
-        return True
-
-    paras = [p.strip() for p in re.split(r"\n\s*\n", markdown) if _usable(p)]
+    paras = [
+        p.strip()
+        for p in re.split(r"\n\s*\n", markdown)
+        if p.strip()
+        and not p.startswith("#")
+        and not p.startswith("<!--")
+        and not p.startswith("![")
+        and not p.startswith("*圖")
+    ]
     return (paras[0] if paras else "")[:180]
 
 
 def _facebook_caption(markdown: str, cand: dict[str, Any]) -> str:
-    """Standfirst + one attention-drawing question (no fixed desk slogan)."""
-    from hk_city.facebook_publish import closing_question_for_draft
-    from hk_city.growth_formats import is_growth_format
-
     thesis = _standfirst(markdown) or (cand.get("title") or "")
-    fmt = cand.get("format") or ""
-    meta = {
-        "headline": cand.get("hook") or cand.get("title") or thesis,
-        "dek": cand.get("dek") or "",
-        "web": {"excerpt": thesis},
-        "pillar": cand.get("pillar"),
-        "format": fmt,
-    }
-    if is_growth_format(fmt) and fmt == "popular_entry":
-        question = "你最先會改哪一項？"
-    elif is_growth_format(fmt) and fmt == "city_howto":
-        question = "你卡在哪一步？"
-    elif is_growth_format(fmt):
-        question = "這次關你荷包嗎？"
-    else:
-        question = closing_question_for_draft(meta)
-    return f"{thesis}\n\n{question}"
+    return (
+        f"{thesis}\n\n"
+        "生意、投資觀察、建造，邊度有窗口？"
+        "生活會點變，有咩威脅，定係仲有未證實的傳聞？"
+    )
 
 
 def _ensure_source_footer(body: str, sources: list[dict[str, Any]]) -> str:

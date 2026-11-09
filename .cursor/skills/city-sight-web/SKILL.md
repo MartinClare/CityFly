@@ -48,7 +48,7 @@ A1 prefers tech/city when tied; property A1 only for true city-life stories.
 ## Mobile-first
 
 - One column; first screen = masthead + A1 only
-- Article hero: full frame on phone (`object-fit: contain`); 16:9 cover from tablet up
+- Hero crops ~4:5 or 3:4 on phone
 - Thumb-sized taps; body ~17–19px; share links on story
 - No card grid in first viewport; no hover-only UI
 

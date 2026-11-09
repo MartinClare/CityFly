@@ -41,35 +41,15 @@ _SKIP_IMG = re.compile(
     r"logo|wordmark|brandmark|lockup|sponsor|partner[-_]?logo|"
     r"icon|banner|button|spacer|pixel|sprite|avatar|favicon|"
     r"wcag|iso9001|iso14001|brand-hk|lang\.png|hotline|erb\.png|pfa_|"
-    r"yahoo_default_logo|default[_-]?logo|google-prefered-source|"
     r"[-_/]2c[-_]|[-_]2[-_]?color"
     r")",
     re.I,
 )
-# Aggregator rails (Yahoo related stories, tiny crops) — never use as hero.
-_SKIP_PRESS_CROP = re.compile(
-    r"("
-    r"smartcrop_w1[0-9]{2}_|"  # w100–w199 related thumbs
-    r"smartcrop_w18[0-9]_|"
-    r"resizefill_h4[0-9]\b|resizefill_h5[0-9]\b|"
-    r"/social/images/yahoo_default"
-    r")",
-    re.I,
-)
 _PREFER_IMG = re.compile(r"(attachment|map|plan|diagram|figure|og:image)", re.I)
-_AGGREGATOR_HOST = re.compile(r"(yahoo\.com|news\.google\.|msn\.com|flipboard\.com)", re.I)
 
 
 def _is_logo_url(url: str) -> bool:
     return bool(url and _SKIP_IMG.search(url))
-
-
-def _is_bad_press_url(url: str) -> bool:
-    if not url or not url.startswith("http"):
-        return True
-    if _is_logo_url(url) or _SKIP_PRESS_CROP.search(url):
-        return True
-    return False
 
 
 def _png_size(data: bytes) -> tuple[int, int] | None:
@@ -141,15 +121,6 @@ def _accept_image_bytes(data: bytes, *, url: str = "", ctype: str = "") -> bool:
     return True
 
 
-def is_aggregator_page(url: str) -> bool:
-    """Yahoo / Google News / MSN pages often only expose related-story thumbs."""
-    try:
-        host = urlparse(url or "").netloc
-    except Exception:
-        return False
-    return bool(_AGGREGATOR_HOST.search(host))
-
-
 def download_direct_image(
     image_url: str,
     dest: Path,
@@ -159,7 +130,7 @@ def download_direct_image(
     """Download a known hero URL (e.g. from RSS media:content). Skip tiny/logo assets."""
     if not image_url or not str(image_url).startswith("http"):
         return None
-    if _is_bad_press_url(image_url):
+    if _is_logo_url(image_url):
         return None
     session = requests.Session()
     session.headers.update(
@@ -202,10 +173,6 @@ def fetch_press_image(page_urls: list[str], dest: Path) -> dict[str, Any] | None
     for page in page_urls:
         if not page or not page.startswith("http"):
             continue
-        # Aggregator HTML is full of unrelated rail thumbnails — never scrape as hero.
-        if is_aggregator_page(page):
-            logger.info("Skip aggregator press scrape %s", page)
-            continue
         try:
             resp = session.get(page, timeout=15)
             resp.raise_for_status()
@@ -237,57 +204,26 @@ def fetch_press_image(page_urls: list[str], dest: Path) -> dict[str, Any] | None
 
 
 def _image_candidates(page: str, html: str, content_type: str) -> list[tuple[str, str]]:
-    """Rank article heroes: JSON-LD / og:image first. Never steal related-story thumbs."""
     found: list[tuple[str, str]] = []
     soup = BeautifulSoup(html, "lxml")
-
-    for url in _json_ld_image_urls(soup):
-        full = urljoin(page, url)
-        if not _is_bad_press_url(full):
-            found.append((full, "json_ld_image"))
-
-    for prop in (
-        ("property", "og:image"),
-        ("property", "og:image:secure_url"),
-        ("name", "og:image"),
-        ("name", "twitter:image"),
-        ("name", "twitter:image:src"),
-    ):
-        key, val = prop
-        tag = soup.find("meta", attrs={key: val})
-        if tag and tag.get("content"):
-            og_url = urljoin(page, tag["content"])
-            if not _is_bad_press_url(og_url):
-                found.append((og_url, "og_image"))
-
-    # Body images only inside the article — aggregator sidebars are full of wrong stories.
-    host = urlparse(page).netloc
-    article = soup.select_one(
-        "article .caas-body, article [data-test-locator='articleBody'], "
-        "article .content, .article-content, .article__body, "
-        "main article, [itemprop='articleBody'], article"
-    )
-    img_nodes = article.find_all("img") if article else []
-    if not img_nodes and not _AGGREGATOR_HOST.search(host):
-        img_nodes = soup.find_all("img")
-
-    for img in img_nodes:
-        src = img.get("src") or img.get("data-src") or img.get("data-original") or ""
-        if not src or src.startswith("data:"):
+    og = soup.find("meta", property="og:image") or soup.find("meta", attrs={"name": "og:image"})
+    if og and og.get("content"):
+        og_url = urljoin(page, og["content"])
+        if not _is_logo_url(og_url):
+            found.append((og_url, "og_image"))
+    for img in soup.find_all("img"):
+        src = img.get("src") or img.get("data-src") or ""
+        if not src or src.startswith("data:") or _is_logo_url(src):
             continue
         full = urljoin(page, src)
-        if _is_bad_press_url(full):
-            continue
-        # Skip imgs whose alt is clearly another headline (Yahoo related rail).
-        alt = (img.get("alt") or "").strip()
-        if alt and len(alt) >= 12 and _looks_like_other_headline(alt, page, soup):
+        if _is_logo_url(full):
             continue
         kind = "official_map" if _PREFER_IMG.search(src) or "attachment" in src.lower() else "press_photo"
         if kind == "official_map":
             found.insert(0, (full, kind))
         else:
             found.append((full, kind))
-
+    # unique preserve order
     seen: set[str] = set()
     out: list[tuple[str, str]] = []
     for url, kind in found:
@@ -296,62 +232,6 @@ def _image_candidates(page: str, html: str, content_type: str) -> list[tuple[str
         seen.add(url)
         out.append((url, kind))
     return out
-
-
-def _json_ld_image_urls(soup: BeautifulSoup) -> list[str]:
-    urls: list[str] = []
-    for script in soup.find_all("script", type="application/ld+json"):
-        raw = script.string or script.get_text() or ""
-        if not raw.strip():
-            continue
-        try:
-            data = json.loads(raw)
-        except json.JSONDecodeError:
-            continue
-        for node in data if isinstance(data, list) else [data]:
-            if not isinstance(node, dict):
-                continue
-            typ = node.get("@type") or ""
-            if isinstance(typ, list):
-                typ = " ".join(str(t) for t in typ)
-            if not any(t in str(typ) for t in ("NewsArticle", "Article", "WebPage", "BlogPosting")):
-                continue
-            urls.extend(_coerce_image_field(node.get("image")))
-    return urls
-
-
-def _coerce_image_field(image: Any) -> list[str]:
-    out: list[str] = []
-    if isinstance(image, str) and image.startswith("http"):
-        out.append(image)
-    elif isinstance(image, dict):
-        for key in ("url", "contentUrl", "@id"):
-            val = image.get(key)
-            if isinstance(val, str) and val.startswith("http"):
-                out.append(val)
-                break
-    elif isinstance(image, list):
-        for item in image:
-            out.extend(_coerce_image_field(item))
-    return out
-
-
-def _looks_like_other_headline(alt: str, page: str, soup: BeautifulSoup) -> bool:
-    """True when img alt is a different story title (common on Yahoo related rails)."""
-    page_title = ""
-    if soup.title and soup.title.string:
-        page_title = soup.title.string.strip()
-    h1 = soup.find("h1")
-    if h1:
-        page_title = h1.get_text(" ", strip=True) or page_title
-    if not page_title:
-        return False
-    # Same article (alt often equals headline) — keep.
-    if alt[:16] in page_title or page_title[:16] in alt:
-        return False
-    # Chinese/English headline-like alt that does not overlap the article title.
-    overlap = sum(1 for ch in alt[:24] if ch in page_title)
-    return overlap < 4
 
 
 def generate_illustration(prompt: str, dest: Path) -> dict[str, Any]:

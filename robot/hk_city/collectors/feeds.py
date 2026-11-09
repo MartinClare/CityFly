@@ -64,8 +64,6 @@ def _fetch_one(feed: dict[str, Any]) -> list[dict[str, Any]]:
 
     if kind == "html":
         items = _parse_html_list(name, url, resp.text)
-    elif kind == "hk01_json":
-        items = _parse_hk01_json(name, resp.text)
     else:
         items = _parse_rss(name, resp.content)
 
@@ -178,72 +176,6 @@ def _article_body(html: str) -> str:
             return text
     chunks = [t for t in soup.stripped_strings if len(t) >= 60]
     return re.sub(r"\s+", " ", " ".join(chunks[:12])).strip()
-
-
-def _parse_hk01_json(name: str, text: str) -> list[dict[str, Any]]:
-    """Convert HK01 web-data.api JSON pages into feed items."""
-    import json
-
-    try:
-        data = json.loads(text)
-    except json.JSONDecodeError:
-        return []
-    rows: list[dict[str, Any]] = []
-    seen: set[str] = set()
-
-    def walk(nodes: Any) -> None:
-        if isinstance(nodes, dict):
-            if nodes.get("type") == 1 and isinstance(nodes.get("data"), dict):
-                _append_hk01_item(name, nodes["data"], rows, seen)
-            for key in ("items", "sections"):
-                if key in nodes:
-                    walk(nodes[key])
-            return
-        if isinstance(nodes, list):
-            for node in nodes:
-                walk(node)
-
-    walk(data)
-    return rows
-
-
-def _append_hk01_item(
-    name: str, data: dict[str, Any], rows: list[dict[str, Any]], seen: set[str]
-) -> None:
-    title = (data.get("title") or data.get("metaTitle") or "").strip()
-    link = (
-        data.get("canonicalUrl")
-        or data.get("publishUrl")
-        or data.get("shareUrl")
-        or ""
-    ).strip()
-    if not title or not link:
-        return
-    article_id = str(data.get("articleId") or data.get("id") or link)
-    if article_id in seen or link in seen:
-        return
-    seen.add(article_id)
-    seen.add(link)
-    published = data.get("publishTime") or data.get("lastModifyTime") or data.get("createdAt")
-    if isinstance(published, (int, float)):
-        # HK01 often uses millisecond timestamps
-        ts = int(published)
-        if ts > 10_000_000_000:
-            ts //= 1000
-        published = datetime.fromtimestamp(ts, tz=timezone.utc).isoformat()
-    elif published is not None:
-        published = str(published)
-    summary = (data.get("description") or data.get("metaDescription") or "")[:800]
-    rows.append(
-        {
-            "id": f"hk01:{article_id}",
-            "source": name,
-            "title": title,
-            "link": link,
-            "summary": summary,
-            "published": published,
-        }
-    )
 
 
 def _parse_rss(name: str, content: bytes) -> list[dict[str, Any]]:

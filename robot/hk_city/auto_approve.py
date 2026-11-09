@@ -34,19 +34,6 @@ def instruction_leak(markdown: str, dek: str = "") -> bool:
     return _looks_like_worksheet(text)
 
 
-def invented_forecast_certainty(markdown: str) -> bool:
-    """True when the close asserts unsourced certainty (no hedge / 可能 label)."""
-    body = re.split(r"\n##\s*來源", markdown or "", maxsplit=1)[0]
-    close = body[-520:]
-    if not close.strip():
-        return False
-    absolute = ("必然會", "肯定會", "一定會", "必將", "保證會", "鐵定")
-    hedge = ("可能", "或會", "若此", "未證實", "傳聞", "分析", "如果", "或許", "視乎")
-    if any(a in close for a in absolute) and not any(h in close for h in hedge):
-        return True
-    return False
-
-
 def english_title(text: str) -> bool:
     """True when a headline is still the English source line, not a Chinese hook."""
     raw = (text or "").strip()
@@ -97,37 +84,6 @@ def _stamp(action: str, reason: str) -> dict[str, str]:
     }
 
 
-def _as_bool(value: Any) -> bool | None:
-    """Parse model JSON booleans; None when the field is missing or ambiguous."""
-    if value is True or value is False:
-        return value
-    if isinstance(value, (int, float)) and value in (0, 1):
-        return bool(value)
-    if isinstance(value, str):
-        raw = value.strip().lower()
-        if raw in {"true", "yes", "1", "是"}:
-            return True
-        if raw in {"false", "no", "0", "否"}:
-            return False
-    return None
-
-
-def _parse_gate_json(text: str) -> dict[str, Any] | None:
-    match = re.search(r"\{[^{}]*\}", text or "", re.S)
-    if not match:
-        return None
-    blob = match.group(0)
-    try:
-        data = json.loads(blob)
-    except json.JSONDecodeError:
-        # Models sometimes emit {'leak': false} with single quotes.
-        try:
-            data = json.loads(blob.replace("'", '"'))
-        except json.JSONDecodeError:
-            return None
-    return data if isinstance(data, dict) else None
-
-
 def _model_gate(meta: dict[str, Any], raw: str, keepers: list[dict[str, Any]]) -> str:
     """Ask the model to read the draft. Returns leak, same, ok, or hold."""
     from common import llm
@@ -143,43 +99,32 @@ def _model_gate(meta: dict[str, Any], raw: str, keepers: list[dict[str, Any]]) -
                 "url": urls[0] if urls else "",
             }
         )
-    system = (
-        "你是香港雜誌的審稿編輯。只輸出一行 JSON，不要解釋，不要 markdown。"
-        '格式必須是 {"leak": false, "same": false}。'
-    )
+    system = "你是香港雜誌的審稿編輯。只輸出一行 JSON，不要解釋。"
     user = (
         "判斷這篇待審稿。\n"
         "leak 為 true：正文洩露寫作指示、交代寫作過程，或說明自己不能寫什麼。\n"
         "same 為 true：與下列同日稿之中任何一篇報導同一件事，即使標題不同。\n"
-        "兩者皆否才可通過。成品雜誌稿（有標題、正文、來源）只要不是洩露或同題，leak/same 都必須是 false。\n"
+        "兩者皆否才可通過。\n"
         '只輸出 {"leak": false, "same": false}\n'
         f"待審標題：{meta.get('headline') or ''}\n"
         f"待審連結：{sorted(_urls(meta))[:3]}\n"
         f"待審正文：{body}\n"
         f"同日已留稿：{json.dumps(peers, ensure_ascii=False)}\n"
     )
-    # Reasoning models count thinking against max_tokens — keep a real content budget.
-    for attempt in range(2):
-        text = llm.chat(
-            system,
-            user,
-            temperature=0,
-            max_tokens=4096,
-            reasoning_effort="low",
-        )
-        data = _parse_gate_json(text)
-        if not data:
-            logger.warning("Model gate unparseable (attempt %d): %r", attempt + 1, (text or "")[:200])
-            continue
-        leak = _as_bool(data.get("leak"))
-        same = _as_bool(data.get("same"))
-        if leak is True:
-            return "leak"
-        if same is True:
-            return "same"
-        if leak is False and same is False:
-            return "ok"
-        logger.warning("Model gate ambiguous JSON (attempt %d): %s", attempt + 1, data)
+    text = llm.chat(system, user, temperature=0, max_tokens=80)
+    match = re.search(r"\{.*\}", text, re.S)
+    if not match:
+        return "hold"
+    try:
+        data = json.loads(match.group(0))
+    except json.JSONDecodeError:
+        return "hold"
+    if data.get("leak") is True:
+        return "leak"
+    if data.get("same") is True:
+        return "same"
+    if data.get("leak") is False and data.get("same") is False:
+        return "ok"
     return "hold"
 
 
@@ -192,7 +137,7 @@ def translate_title(title: str) -> str:
         "短、具體、像封面句，不要直譯腔，不要加副題。\n"
         f"標題：{title.strip()}"
     )
-    out = llm.chat(system, user, temperature=0.3, max_tokens=1024, reasoning_effort="low").strip()
+    out = llm.chat(system, user, temperature=0.3, max_tokens=120).strip()
     out = out.strip("`\"'「」# ").splitlines()[0].strip()
     if out.startswith("#"):
         out = out.lstrip("#").strip()
@@ -268,17 +213,6 @@ def review_day(day: str) -> dict[str, Any]:
             _write_meta(js, meta)
             counts["rejected"] += 1
             notes.append(f"{slug}: 指令外洩")
-            continue
-
-        if invented_forecast_certainty(raw):
-            meta["auto_review"] = _stamp(
-                "hold_forecast",
-                "收束似有未標明的確定預測，請人手核對來源",
-            )
-            _write_meta(js, meta)
-            keepers.append(meta)
-            counts["held"] += 1
-            notes.append(f"{slug}: 預測語氣過硬")
             continue
 
         twin = next((k for k in keepers if similar(meta, k)), None)

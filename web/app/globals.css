@@ -968,31 +968,20 @@ html[data-theme="day"] .hero-vignette {
   background: var(--bg-elev);
 }
 
-/* Phone: keep full frame — 4:5 cover was cropping left/right of landscape heroes. */
 .article-hero img {
   width: 100%;
-  height: auto;
-  max-height: none;
-  object-fit: contain;
-  object-position: center;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
 }
 
 @media (min-width: 720px) {
   .article-hero img {
     aspect-ratio: 16 / 9;
-    object-fit: cover;
   }
 }
 
 .prose {
   color: var(--ink);
-}
-
-.prose img {
-  width: 100%;
-  height: auto;
-  object-fit: contain;
-  margin: 0.75rem 0 1rem;
 }
 
 .prose p {

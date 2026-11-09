@@ -57,7 +57,7 @@ def default_settings(base: dict[str, Any] | None = None) -> dict[str, Any]:
         }
     return {
         "news_limit": int(base.get("news_limit") or 160),
-        "max_article_drafts": int(base.get("max_article_drafts") or 10),
+        "max_article_drafts": int(base.get("max_article_drafts") or 30),
         "ledger_lookback_days": int(base.get("ledger_lookback_days") or 45),
         "pillars": pillars,
         "collectors": collectors,

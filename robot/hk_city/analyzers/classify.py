@@ -13,42 +13,12 @@ from hk_city.analyzers.source_copy import copy_stats, is_thin_copy
 
 logger = logging.getLogger(__name__)
 
-# Overseas tech desks that must pass future_life_gate before drafting.
 ADVANCED_TECH_SOURCES = {
     "MIT Technology Review",
     "IEEE Spectrum",
     "Ars Technica",
     "Wired Science",
-    "Wired",
     "Rest of World",
-    "The Verge",
-    "TechCrunch",
-    "Engadget",
-    "Bloomberg Technology",
-    "CNBC Technology",
-    "The Register",
-    "Financial Times Technology",
-    "New York Times Technology",
-    "The Guardian Technology",
-    "BBC Technology",
-    "OpenAI",
-    "Anthropic",
-    "Google AI Blog",
-    "Apple Newsroom",
-    "MacRumors",
-    "9to5Mac",
-    "Tom's Hardware",
-    "PCMag",
-    "The Information",
-    "INSIDE",
-    "GIGAZINE",
-    "cnBeta",
-    "Samsung Newsroom",
-    "Microsoft Blog",
-    "Microsoft News",
-    "Windows Experience Blog",
-    "Windows Central",
-    "GitHub Blog",
 }
 
 _ADVANCED_DROP = re.compile(
@@ -60,76 +30,16 @@ _ADVANCED_DROP = re.compile(
     r"artemis\s*(ii|iii|2|3)?\b|lunar\s+mission|moon\s+landing|"
     r"the\s+download\b|weekly\s+roundup|morning\s+report|"
     r"maga\b|midterms?|democrat|republican|gop\b|"
-    r"jim\s+cramer|stock\s+sell[- ]?off|don'?t\s+chase|"
     r"hands[- ]on\s+review|\breview:\s*|laptop\s+review|phone\s+review"
     r")\b"
-)
-# Politics / war / diplomacy — never draft these as technology.
-_GEOPOLITICS = re.compile(
-    r"(?i)("
-    r"\b("
-    r"netanyahu|hegseth|putin|zelensky|zelenskyy|hamas|hezbollah|"
-    r"gaza\b|west\s+bank|ukraine\s+war|nato\b|idf\b|"
-    r"white\s+house|us\s+congress|midterms?|democrat|republican|gop\b|maga\b|"
-    r"presidential\s+election|election\s+campaign|denuclearization|"
-    r"summit\s+with\s+(xi|putin)|iran\s+strike|missile\s+strike|"
-    r"ceasefire|hostage\s+deal|foreign\s+minister|secretary\s+of\s+state"
-    r")\b|"
-    r"以巴|哈馬斯|普京|澤連斯基|白宮|中期選舉|共和黨|民主黨|以軍|加沙|"
-    r"停火協議|外交部長|國務卿|北約|烏克蘭戰爭"
-    r")"
 )
 _ADVANCED_KEEP_HINT = re.compile(
     r"(?i)\b("
     r"AI|model|malware|privacy|implant|organ|battery|charging|"
     r"self[- ]driving|autonomous|powertrain|grid|nuclear|smartphone|"
     r"camera|drone|medical|pharma|drug|vaccine|treatment|chip|"
-    r"open[- ]weight|LLM|electric\s+vehicle|\bEV\b|charger|"
-    r"data\s*cent(?:er|re)|cyberattack|ransomware|edge\s+AI"
+    r"open[- ]weight|LLM|electric\s+vehicle|\bEV\b|charger"
     r")\b"
-)
-# Local Unwire-style life hooks (not government institution PR).
-_LOCAL_TECH_LIFE = re.compile(
-    r"(私隱|隱私|監控|電力|電費|電網|通勤|出行|醫療|診症|工作方式|打工|"
-    r"智慧城市|城市大腦|邊緣\s*AI|Edge\s*AI|數據中心|資安|勒索軟件|"
-    r"自動駕駛|電動車|充電|電池壽命|遙距工作|居家辦公|"
-    r"privacy|surveillance|grid|data\s*cent|ransomware|self[- ]driving|"
-    r"electric\s+vehicle|remote\s+work|smart\s+city)",
-    re.I,
-)
-# Local tech PR we want: big consumer brands people actually buy in HK.
-_BIG_BRAND_TECH = re.compile(
-    r"(?i)("
-    r"\bApple\b|iPhone|iPad|MacBook|AirPods|Vision\s*Pro|蘋果|"
-    r"Xiaomi|小米|Redmi|紅米|"
-    r"Huawei|華為|HarmonyOS|鴻蒙|"
-    r"Samsung|三星|Galaxy|"
-    r"\bGoogle\b|Pixel|"
-    r"OPPO|vivo|一加|OnePlus|realme|榮耀|\bHonor\b|"
-    r"Sony|索尼|Lenovo|聯想|ASUS|華碩|Acer|宏碁|"
-    r"\bDJI\b|大疆|Tesla|特斯拉|Nvidia|英偉達|"
-    r"Microsoft|微軟|Surface|\bMeta\b|OpenAI|Anthropic|"
-    r"ByteDance|字節跳動|\bTikTok\b|抖音|Tencent|騰訊|Alibaba|阿里|"
-    r"BYD|比亞迪|\bNothing\b|Garmin|GoPro|Belkin|Anker|羅技|\bLogitech\b"
-    r")"
-)
-# Government / quasi-gov tech desks — crawl OK, do not draft as local tech PR.
-_GOV_TECH_SOURCES = frozenset(
-    {
-        "數字政策辦公室",
-        "數碼港新聞",
-        "科學園新聞",
-        "生產力促進局傳媒",
-        "建造業議會新聞",
-        "政府新聞公報",
-    }
-)
-_GOV_TECH_PR = re.compile(
-    r"(數字政策辦公室|數碼港|科學園|生產力促進局|建造業議會|創新科技署|"
-    r"Cyberport|Science\s*Park|HKSTP|Digital\s*Policy\s*Office|"
-    r"gov\.hk|諮詢委員會|開放日|施政報告|"
-    r"簽署.{0,12}(備忘錄|MOU)|委任|局長|司長)",
-    re.I,
 )
 
 _LIFE_SYSTEM = (
@@ -138,11 +48,8 @@ _LIFE_SYSTEM = (
     "life is true when the story changes ordinary life in the next few years: "
     "work, pay, getting around, home power, medical care, privacy, or a phone, "
     "computer, or model people already use. New car technology counts "
-    "(battery, charging, self-driving, powertrain, safety). Data centers that "
-    "reshape electricity bills or grids count. Cyberattacks that take down "
-    "everyday services count. "
-    "life is false for geopolitics, war, elections, diplomacy, stock-tip "
-    "columns, show-car stunts, luxury cars with no new system, product "
+    "(battery, charging, self-driving, powertrain, safety). "
+    "life is false for show-car stunts, luxury cars with no new system, product "
     "reviews, digests, rockets/space spectacle, US party politics, culture essays, "
     "or clever science with no tool people will use. "
     "reason must name the life change (or why not) in one short Chinese clause."
@@ -157,19 +64,6 @@ PILLAR_HINTS: dict[str, list[str]] = {
 }
 
 FORMAT_HINTS: dict[str, list[str]] = {
-    # Growth formats first — heat verbs before brand door-openers
-    "hot_explainer": [
-        "降價", "加價", "漲價", "缺貨", "黃牛", "停售", "清貨", "減配",
-        "炒價", "突然", "地區鎖",
-    ],
-    "city_howto": [
-        "怎麼選", "怎麼買", "如何選", "開箱", "設定", "步驟", "清單", "攻略",
-        "訂閱", "降級", "換機", "退貨", "保修", "eSIM", "充電",
-    ],
-    "popular_entry": [
-        "是什麼", "到底", "三分鐘", "普通人", "新機", "發表", "iPhone", "ChatGPT",
-        "Tesla", "AirPods", "旗艦", "大家在說",
-    ],
     "one_number": ["指數", "成交", "售價", "租金", "失業率", "人次", "百分比"],
     "map_detective": ["啟德", "元朗", "北都", "新界北", "西九", "東涌", "將軍澳", "洪水橋", "Kai Tak", "Hung Hom"],
     "tech_life": ["AI", "人工智能", "智慧", "城市大腦", "數碼", "數據", "私隱", "監控"],
@@ -213,17 +107,7 @@ def classify_item(item: dict[str, Any]) -> dict[str, Any]:
     entertainment = (
         "medium"
         if district
-        or fmt in {
-            "one_number",
-            "map_detective",
-            "reality_vs_hype",
-            "opportunity_window",
-            "tech_life",
-            "rumor_watch",
-            "city_howto",
-            "hot_explainer",
-            "popular_entry",
-        }
+        or fmt in {"one_number", "map_detective", "reality_vs_hype", "opportunity_window", "tech_life", "rumor_watch"}
         else "low"
     )
     authority = max(1, min(5, 6 - tier))
@@ -235,31 +119,23 @@ def classify_item(item: dict[str, Any]) -> dict[str, Any]:
     rec = "discard"
     gov_pr = _is_gov_pr_echo(text)
     interest = _interest(text, district, fmt, collector)
-    if fmt in {"popular_entry", "hot_explainer"}:
-        interest = max(interest, 5)
-        entertainment = "high"
-    elif fmt == "city_howto":
-        interest = max(interest, 4)
-        if entertainment == "low":
-            entertainment = "medium"
     entertainment = "high" if interest >= 5 else entertainment
     thin = is_thin_copy(item)
     future_life: bool | None = None
     discard_reason: str | None = None
-    gov_tech = False
-    off = off_brief_kind(item.get("title") or "", item.get("summary") or "")
-    if off:
+    if thin or _is_off_brief(text) or _is_nav_page(text) or _is_thin_program(text):
         rec = "discard"
-        discard_reason = off
+        if _is_off_brief(text):
+            discard_reason = off_brief_kind(text) or "off_brief"
+        elif thin:
+            discard_reason = "thin_copy"
+        else:
+            discard_reason = "nav_or_program"
     elif advanced:
         drop = advanced_tech_headline_drop(item.get("title") or "", item.get("summary") or "")
         if drop:
             rec = "discard"
             discard_reason = drop
-            future_life = False
-        elif thin:
-            rec = "discard"
-            discard_reason = "thin_copy"
             future_life = False
         else:
             future_life = future_life_gate(item.get("title") or "", item.get("summary") or "")
@@ -272,48 +148,12 @@ def classify_item(item: dict[str, Any]) -> dict[str, Any]:
                 rec = "discard"
                 discard_reason = "not_future_life"
     elif collector == "tech_local":
-        # Local desk: big-brand / life-change first; government PR kept but lower priority.
-        drop = advanced_tech_headline_drop(item.get("title") or "", item.get("summary") or "")
-        if drop:
-            rec = "discard"
-            discard_reason = drop
-            future_life = False
-        elif _big_brand_local_tech(text, district):
-            future_life = True
-            rec = "publish"
-            interest = max(interest, 4)
-            fmt = "tech_life"
-            pillar = "tech"
-        elif _LOCAL_TECH_LIFE.search(text) and not _GOV_TECH_PR.search(text):
-            # Non-brand Unwire life story (privacy, grid, commute) — keep.
-            future_life = True
-            rec = "publish"
-            interest = max(interest, 4)
-            fmt = "tech_life"
-            pillar = "tech"
-        elif _is_gov_tech_pr(source, text):
-            # Keep gov / park PR, but below brands and future-life tech.
-            gov_tech = True
-            future_life = False
-            rec = "publish"
-            interest = 3  # packable floor; editorial score still ranks below brands
-            fmt = "tech_life"
-            pillar = "tech"
-        elif thin or _is_nav_page(text) or _is_thin_program(text):
-            rec = "discard"
-            discard_reason = "thin_copy" if thin else "nav_or_program"
-            future_life = False
-        elif gov_pr or (_is_thin_announce(text) and not district):
+        # Local institution / Unwire pages: keep as fallback, scored below overseas life stories.
+        if gov_pr or (_is_thin_announce(text) and not district):
             rec = "monitor"
-            future_life = False
-            discard_reason = "local_tech_pr"
         else:
-            rec = "monitor"
-            future_life = False
-            discard_reason = "local_tech_not_life"
-    elif thin or _is_nav_page(text) or _is_thin_program(text):
-        rec = "discard"
-        discard_reason = "thin_copy" if thin else "nav_or_program"
+            rec = "publish"
+            interest = max(interest, 3)
     elif collector == "consultancy":
         rec = "monitor"
     elif collector == "local_news" and _has_city_hook(text):
@@ -354,7 +194,6 @@ def classify_item(item: dict[str, Any]) -> dict[str, Any]:
         "officials_talk": _is_officials_talk(text),
         "advanced_tech": advanced,
         "future_life": future_life,
-        "gov_tech_pr": gov_tech,
     }
     if item.get("image_url"):
         out["image_url"] = item["image_url"]
@@ -375,49 +214,9 @@ def advanced_tech_headline_drop(headline: str, extra: str = "") -> str | None:
     blob = f"{headline or ''} {extra or ''}"
     if off_brief_kind(headline or "", extra or ""):
         return off_brief_kind(headline or "", extra or "")
-    if _GEOPOLITICS.search(blob):
-        return "geopolitics"
     if _ADVANCED_DROP.search(blob):
         return "advanced_drop"
     return None
-
-
-def is_future_life_tech(cand: dict[str, Any]) -> bool:
-    """True when a tech candidate is allowed to become a magazine draft."""
-    if cand.get("future_life") is True:
-        return True
-    return False
-
-
-def _is_gov_tech_pr(source: str, text: str) -> bool:
-    """True for government / quasi-gov tech PR we should not draft as local tech."""
-    name = (source or "").strip()
-    if name in _GOV_TECH_SOURCES or any(name.startswith(s) for s in _GOV_TECH_SOURCES):
-        return True
-    # Gov-institution blurbs without a consumer brand.
-    if _GOV_TECH_PR.search(text) and not _BIG_BRAND_TECH.search(text):
-        return True
-    return False
-
-
-def _big_brand_local_tech(text: str, district: str | None) -> bool:
-    """Local PR keep when a big brand product touches HK daily life."""
-    if not _BIG_BRAND_TECH.search(text):
-        return False
-    if district:
-        return True
-    if re.search(r"(香港|Hong\s*Kong|\bHK\b|港人|本港|本地|發售|開賣|上市|預購)", text, re.I):
-        return True
-    if _LOCAL_TECH_LIFE.search(text):
-        return True
-    # Brand + phone/AI/car product frame is enough for Unwire-style local coverage.
-    if re.search(
-        r"(?i)(phone|手機|平板|筆電|耳機|手表|手錶|充電|電池|相機|筆電|"
-        r"AI\b|模型|晶片|芯片|電動|自動駕駛|智能家居)",
-        text,
-    ):
-        return True
-    return False
 
 
 def future_life_gate(title: str, summary: str = "") -> bool:
@@ -432,7 +231,7 @@ def future_life_gate(title: str, summary: str = "") -> bool:
         "Reply with one JSON line only."
     )
     try:
-        text = llm.chat(_LIFE_SYSTEM, user, temperature=0, max_tokens=1024, reasoning_effort="low")
+        text = llm.chat(_LIFE_SYSTEM, user, temperature=0, max_tokens=120)
         match = re.search(r"\{.*?\}", text, re.S)
         if not match:
             return bool(_ADVANCED_KEEP_HINT.search(f"{title} {summary}"))

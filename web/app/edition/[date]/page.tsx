@@ -7,8 +7,13 @@ import { formatEditionDate, loadMagazine } from "@/lib/content";
 
 type Props = { params: Promise<{ date: string }> };
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30;
 export const dynamicParams = true;
+
+export async function generateStaticParams() {
+  const { editions } = await loadMagazine();
+  return Object.keys(editions).map((date) => ({ date }));
+}
 
 export async function generateMetadata({ params }: Props) {
   const { date } = await params;
