@@ -35,16 +35,26 @@ OUTLET_FEEDS: dict[str, tuple[str, str]] = {
     "cnbc.com": ("CNBC Technology", "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=19854910"),
     "theregister.com": ("The Register", "https://www.theregister.com/headlines.atom"),
     "ft.com": ("Financial Times Technology", "https://www.ft.com/technology?format=rss"),
-    "axios.com": ("Axios", "https://www.axios.com/feeds/feed.rss"),
+    # Axios general feed is mostly politics — do not subscribe into tech_local.
     "nytimes.com": ("New York Times Technology", "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml"),
-    "nintendolife.com": ("Nintendo Life", "https://www.nintendolife.com/feeds/latest"),
     "info.gov.hk": ("政府新聞公報", "https://www.info.gov.hk/gia/rss/general_zh.xml"),
     "cnbeta.com.tw": ("cnBeta", "https://www.cnbeta.com.tw/backend.php"),
     "inside.com.tw": ("INSIDE", "https://feeds.feedburner.com/inside-blog-taiwan"),
     "gigazine.net": ("GIGAZINE", "https://gigazine.net/news/rss_atom/"),
     "news.samsung.com": ("Samsung Newsroom", "https://news.samsung.com/global/feed"),
-    "blog.playstation.com": ("PlayStation Blog", "https://blog.playstation.com/feed/"),
     "apple.com": ("Apple Newsroom", "https://www.apple.com/newsroom/rss-feed.rss"),
+    # Local news (also listed under local_news in config.yaml)
+    "stheadline.com": ("星島頭條", "https://www.stheadline.com/rss"),
+    "hk01.com": ("香港01 港聞", "https://web-data.api.hk01.com/v2/page/zone/1"),
+}
+
+# Optional overrides when the catalog URL is not plain RSS / wrong collector group.
+OUTLET_FEED_META: dict[str, dict[str, str]] = {
+    "hk01.com": {"kind": "hk01_json", "group": "local_news", "policy": "metadata_only"},
+    "stheadline.com": {"kind": "rss", "group": "local_news", "policy": "rss_only"},
+    "info.gov.hk": {"kind": "rss", "group": "local_news", "policy": "rss_only"},
+    "rthk.hk": {"kind": "rss", "group": "local_news", "policy": "rss_only"},
+    "news.mingpao.com": {"kind": "rss", "group": "local_news", "policy": "rss_only"},
 }
 
 

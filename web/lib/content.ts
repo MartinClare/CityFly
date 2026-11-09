@@ -13,6 +13,8 @@ export type Story = {
   dek: string;
   placement?: string;
   hero?: string | null;
+  /** Facebook callout art (optional); used by /stories/[slug]/share OG tags */
+  fb_hero?: string | null;
   body_md: string;
   og_title: string;
   og_description: string;

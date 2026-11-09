@@ -75,13 +75,17 @@ def _resolve_hero(day_dir: Path, meta: dict[str, Any]) -> Path | None:
         if raw and "/hk_city/" in str(raw) and "/robot/" not in str(raw):
             candidates.append(ROOT / "hk_city" / str(raw).split("/hk_city/", 1)[-1])
 
-    # Fallback: any file named after the slug in images/
+    # Fallback: any file named after the slug in images/ (skip FB-only siblings)
     if slug:
         images = day_dir / "images"
         if images.is_dir():
             for ext in (".jpg", ".jpeg", ".png", ".webp", ".gif"):
                 candidates.append(images / f"{slug}{ext}")
-            candidates.extend(sorted(images.glob(f"{slug}.*")))
+            for p in sorted(images.glob(f"{slug}.*")):
+                name = p.name.lower()
+                if name.endswith(".fb.jpg") or ".fb-base." in name or name.endswith(".fb.png"):
+                    continue
+                candidates.append(p)
 
     # Markdown ![hero](images/...) reference
     md_path = day_dir / f"{slug}.md"
@@ -205,7 +209,17 @@ def _pick_edition(stories: list[dict[str, Any]], date: str) -> dict[str, Any]:
     }
 
 
-def _story_row(s: dict[str, Any], hero: str | None) -> dict[str, Any]:
+def _fb_callout_src(day_dir: Path, slug: str) -> Path | None:
+    """FB-only callout sibling next to the web hero, if present."""
+    images = day_dir / "images"
+    for name in (f"{slug}.fb.jpg", f"{slug}.fb.jpeg", f"{slug}.fb.png"):
+        p = images / name
+        if p.is_file():
+            return p
+    return None
+
+
+def _story_row(s: dict[str, Any], hero: str | None, fb_hero: str | None = None) -> dict[str, Any]:
     return {
         "slug": s["slug"],
         "as_of": s["as_of"],
@@ -215,6 +229,7 @@ def _story_row(s: dict[str, Any], hero: str | None) -> dict[str, Any]:
         "dek": s["dek"],
         "placement": s["placement"],
         "hero": hero,
+        "fb_hero": fb_hero,
         "body_md": s["body_md"],
         "og_title": s["og_title"],
         "og_description": s["og_description"],
@@ -244,6 +259,7 @@ def magazine_payload(*, hero_base: str | None = None) -> dict[str, Any]:
     stories_out: list[dict[str, Any]] = []
     for s in approved:
         hero = None
+        fb_hero = None
         src = s["_hero_src"]
         if src:
             dest_name = f"{s['slug']}{src.suffix.lower()}"
@@ -251,7 +267,14 @@ def magazine_payload(*, hero_base: str | None = None) -> dict[str, Any]:
                 hero = f"{hero_base.rstrip('/')}/published/images/{dest_name}"
             else:
                 hero = f"/heroes/{dest_name}"
-        stories_out.append(_story_row(s, hero))
+        fb_src = _fb_callout_src(s["_day_dir"], s["slug"])
+        if fb_src:
+            fb_name = fb_src.name
+            if hero_base:
+                fb_hero = f"{hero_base.rstrip('/')}/published/images/{fb_name}"
+            else:
+                fb_hero = f"/heroes/{fb_name}"
+        stories_out.append(_story_row(s, hero, fb_hero))
     if not stories_out:
         return {"stories": [], "edition": _empty_edition(), "editions": {}}
     by_day: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -266,15 +289,16 @@ def magazine_payload(*, hero_base: str | None = None) -> dict[str, Any]:
 
 
 def approved_hero_file(name: str) -> Path | None:
-    """Image file for an approved story, or None if the name is not published."""
+    """Image file for an approved story (web hero or FB callout), or None."""
     if not name or "/" in name or ".." in name:
         return None
     for s in _load_approved(None):
         src = s["_hero_src"]
-        if not src:
-            continue
-        if f"{s['slug']}{src.suffix.lower()}" == name and src.exists():
+        if src and f"{s['slug']}{src.suffix.lower()}" == name and src.exists():
             return src
+        fb = _fb_callout_src(s["_day_dir"], s["slug"])
+        if fb and fb.name == name and fb.exists():
+            return fb
     return None
 
 
@@ -291,13 +315,19 @@ def publish(day: str | None = None) -> dict[str, Any]:
     stories_out: list[dict[str, Any]] = []
     for s in approved:
         hero_rel = None
+        fb_rel = None
         src = s["_hero_src"]
         if src:
             dest_name = f"{s['slug']}{src.suffix.lower()}"
             dest = heroes_dir / dest_name
             shutil.copy2(src, dest)
             hero_rel = f"/heroes/{dest_name}"
-        stories_out.append(_story_row(s, hero_rel))
+        fb_src = _fb_callout_src(s["_day_dir"], s["slug"])
+        if fb_src:
+            fb_dest = heroes_dir / fb_src.name
+            shutil.copy2(fb_src, fb_dest)
+            fb_rel = f"/heroes/{fb_src.name}"
+        stories_out.append(_story_row(s, hero_rel, fb_rel))
 
     by_day: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for s in stories_out:

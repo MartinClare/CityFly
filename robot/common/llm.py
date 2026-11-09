@@ -31,17 +31,30 @@ def chat(
     user: str,
     *,
     temperature: float = 0.4,
-    max_tokens: int = 4096,
+    max_tokens: int = 8192,
+    reasoning_effort: str | None = None,
 ) -> str:
+    """Chat completion via OpenRouter / DeepSeek.
+
+    Note: on reasoning models (DeepSeek V4 Pro), reasoning tokens count against
+    ``max_tokens``. A small budget often returns ``finish_reason=length`` with
+    empty ``content`` even when the account still has plenty of credits.
+    """
     client, cfg = get_client()
     model = cfg["model"]
-    logger.info("Calling LLM model=%s", model)
+    logger.info("Calling LLM model=%s max_tokens=%s", model, max_tokens)
     extra_body: dict[str, Any] = {}
     if cfg.get("provider") == "openrouter":
         extra_body["provider"] = {
             "allow_fallbacks": True,
             "data_collection": "allow",
         }
+        # Short JSON gates must not burn the whole budget on hidden reasoning.
+        effort = reasoning_effort
+        if effort is None and max_tokens <= 512:
+            effort = "low"
+        if effort:
+            extra_body["reasoning"] = {"effort": effort}
 
     last_err: Exception | None = None
     for attempt in range(1, 4):
@@ -68,14 +81,36 @@ def chat(
     content = (message.content or "").strip()
     if not content:
         reasoning = str(getattr(message, "reasoning", "") or "").strip()
-        pulled = _article_from_reasoning(reasoning)
-        if pulled:
-            logger.info("Using article text found in model reasoning (%d chars)", len(pulled))
-            content = pulled
-        elif reasoning:
-            logger.warning("LLM returned reasoning only; ignoring scratch notes")
+        # Short gate replies sometimes land only in reasoning (e.g. {"leak":false,"same":false}).
+        json_hit = re.search(r"\{[^{}]{0,400}\}", reasoning)
+        if json_hit and ("leak" in json_hit.group(0) or "life" in json_hit.group(0)):
+            content = json_hit.group(0)
+            logger.info("Using JSON found in model reasoning")
+        else:
+            pulled = _article_from_reasoning(reasoning)
+            if pulled:
+                logger.info("Using article text found in model reasoning (%d chars)", len(pulled))
+                content = pulled
+            elif reasoning:
+                logger.warning("LLM returned reasoning only; ignoring scratch notes")
     if not content:
-        logger.warning("LLM returned empty content model=%s finish=%s", model, resp.choices[0].finish_reason)
+        finish = resp.choices[0].finish_reason
+        usage = getattr(resp, "usage", None)
+        detail = ""
+        if usage is not None:
+            details = getattr(usage, "completion_tokens_details", None)
+            reasoning_tokens = getattr(details, "reasoning_tokens", None) if details else None
+            detail = (
+                f" completion={getattr(usage, 'completion_tokens', '?')}"
+                f" reasoning={reasoning_tokens if reasoning_tokens is not None else '?'}"
+            )
+        logger.warning(
+            "LLM returned empty content model=%s finish=%s max_tokens=%s%s",
+            model,
+            finish,
+            max_tokens,
+            detail,
+        )
     return content
 
 

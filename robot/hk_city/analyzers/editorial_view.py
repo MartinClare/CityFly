@@ -85,12 +85,16 @@ def _score(row: dict[str, Any]) -> float:
     elif row.get("collector") == "local_news":
         score += 0.2
     if row.get("collector") == "tech_local":
-        if row.get("advanced_tech") and row.get("future_life"):
+        if row.get("future_life"):
+            # Overseas life-change tech, or big-brand / life local stories.
             score += 4.5
+        elif row.get("gov_tech_pr"):
+            # Keep government PR, but never above brands / future-life tech.
+            score += 0.6
         elif row.get("advanced_tech"):
             score -= 2.0
         else:
-            score += 0.4
+            score -= 0.5
     if row.get("collector") == "consultancy":
         score -= 1.0
     if row.get("gov_pr_echo"):
@@ -104,7 +108,8 @@ def _score(row: dict[str, Any]) -> float:
     blob = f"{row.get('title') or ''} {row.get('summary') or ''}"
     if any(k in blob for k in ("AI", "人工智能", "城市大腦", "創科", "智慧", "傳聞")):
         score += 1.5
-    score += min(2, (row.get("cluster_size") or 1) - 1) * 0.3
+    # Prefer same-event / multi-outlet clusters over single thin hits
+    score += min(3, max(0, (row.get("cluster_size") or 1) - 1)) * 0.8
     return round(score, 2)
 
 

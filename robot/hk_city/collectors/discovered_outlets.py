@@ -12,7 +12,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from common.config import data_root
-from hk_city.collectors.outlet_catalog import lookup_feed
+from hk_city.collectors.outlet_catalog import OUTLET_FEED_META, lookup_feed
 from hk_city.desk.settings_store import ensure_settings, save_settings
 
 STORE_NAME = "discovered_outlets.json"
@@ -55,41 +55,58 @@ def _existing_feed_urls(topic: str = "hk_city") -> set[str]:
 
     cfg = merge_topic_config(load_yaml_raw(topic))
     urls: set[str] = set()
-    group = (cfg.get("collectors") or {}).get("tech_local") or {}
-    for feed in group.get("feeds") or []:
-        if isinstance(feed, dict) and feed.get("url"):
-            urls.add(str(feed["url"]).rstrip("/"))
+    for group in (cfg.get("collectors") or {}).values():
+        if not isinstance(group, dict):
+            continue
+        for feed in group.get("feeds") or []:
+            if isinstance(feed, dict) and feed.get("url"):
+                urls.add(str(feed["url"]).rstrip("/"))
     return urls
 
 
-def _feed_alive(url: str) -> bool:
-    """Skip catalog URLs that 404 or do not look like a feed."""
+def _feed_alive(url: str, *, kind: str = "rss") -> bool:
+    """Skip catalog URLs that 404 or do not look like a feed / HK01 JSON page."""
     import requests
 
     try:
         resp = requests.get(
             url,
             timeout=15,
-            headers={"User-Agent": "Mozilla/5.0 CityFlyBot/0.1", "Accept": "application/rss+xml, application/atom+xml, application/xml, text/xml, */*"},
+            headers={
+                "User-Agent": "Mozilla/5.0 CityFlyBot/0.1",
+                "Accept": "application/rss+xml, application/atom+xml, application/json, application/xml, text/xml, */*",
+            },
         )
         if resp.status_code >= 400:
             return False
-        body = (resp.text or "")[:4000].lower()
-        return any(tok in body for tok in ("<rss", "<feed", "<channel", "xmlns:atom", "<item", "<entry"))
+        body = (resp.text or "")[:4000]
+        lower = body.lower()
+        if kind == "hk01_json":
+            return '"items"' in lower or '"sections"' in lower
+        return any(tok in lower for tok in ("<rss", "<feed", "<channel", "xmlns:atom", "<item", "<entry"))
     except Exception:
         return False
 
 
-def _subscribe(name: str, url: str, topic: str = "hk_city") -> bool:
-    """Append a feed to the permanent tech_local list. Later crawls keep fetching it."""
+def _subscribe(
+    name: str,
+    url: str,
+    topic: str = "hk_city",
+    *,
+    kind: str = "rss",
+    group: str = "tech_local",
+    policy: str = "rss_only",
+    tier: int = 2,
+) -> bool:
+    """Append a feed to a permanent collector list. Later crawls keep fetching it."""
     url = url.strip()
     if not url or url.rstrip("/") in _existing_feed_urls(topic):
         return False
-    if not _feed_alive(url):
+    if not _feed_alive(url, kind=kind):
         return False
     settings = ensure_settings(topic)
     slot = settings.setdefault("collectors", {}).setdefault(
-        "tech_local", {"enabled": True, "limit": 50, "feeds": [], "extra_feeds": []}
+        group, {"enabled": True, "limit": 100, "feeds": [], "extra_feeds": []}
     )
     extras = list(slot.get("extra_feeds") or [])
     if any((e.get("url") or "").rstrip("/") == url.rstrip("/") for e in extras):
@@ -98,9 +115,9 @@ def _subscribe(name: str, url: str, topic: str = "hk_city") -> bool:
         {
             "name": name,
             "url": url,
-            "kind": "rss",
-            "tier": 2,
-            "policy": "rss_only",
+            "kind": kind,
+            "tier": tier,
+            "policy": policy,
             "enabled": True,
             "via": "unwire",
         }
@@ -167,7 +184,18 @@ def note_attributions(
         mapped = lookup_feed(domain)
         if mapped:
             feed_name, feed_url = mapped
-            if _subscribe(feed_name, feed_url, topic):
+            meta = OUTLET_FEED_META.get(domain) or OUTLET_FEED_META.get(
+                ".".join(domain.split(".")[-2:]) if domain.count(".") >= 2 else domain
+            ) or {}
+            if _subscribe(
+                feed_name,
+                feed_url,
+                topic,
+                kind=meta.get("kind") or "rss",
+                group=meta.get("group") or "tech_local",
+                policy=meta.get("policy") or "rss_only",
+                tier=3 if meta.get("group") == "local_news" else 2,
+            ):
                 subscribed += 1
             continue
         row = by_domain.get(domain)
