@@ -4,7 +4,7 @@ import {
 } from "./components/FrontEdition";
 import { loadMagazine } from "@/lib/content";
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const { stories, edition, editions } = await loadMagazine();

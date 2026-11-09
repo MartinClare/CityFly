@@ -272,8 +272,8 @@ def delete_pack(day: str, slug: str) -> None:
         to_remove.append(p)
     if rel:
         to_remove.append(DRAFTS / day / rel)
-    # slug-named images
-    for ext in (".png", ".jpg", ".jpeg", ".webp"):
+    # slug-named images (web hero + FB-only callout sibling)
+    for ext in (".png", ".jpg", ".jpeg", ".webp", ".fb.jpg"):
         to_remove.append(images_dir / f"{slug}{ext}")
     seen: set[Path] = set()
     for p in to_remove:

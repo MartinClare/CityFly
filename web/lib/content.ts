@@ -13,7 +13,11 @@ export type Story = {
   dek: string;
   placement?: string;
   hero?: string | null;
-  body_md: string;
+  /** Facebook callout art (optional); used by /stories/[slug]/share OG tags */
+  fb_hero?: string | null;
+  /** Short card blurb from desk index (preferred over body scrape). */
+  teaser?: string;
+  body_md?: string;
   og_title: string;
   og_description: string;
   disclaimer_required?: boolean;
@@ -77,11 +81,15 @@ function bodyWithoutChrome(body: string, headline: string, dek: string): string 
 function cleanStory(story: Story): Story {
   const headline = withoutModelComment(story.headline);
   const dek = withoutModelComment(story.dek);
+  const body = story.body_md
+    ? bodyWithoutChrome(story.body_md, headline, dek)
+    : "";
   return {
     ...story,
     headline,
     dek,
-    body_md: bodyWithoutChrome(story.body_md, headline, dek),
+    teaser: withoutModelComment(story.teaser) || undefined,
+    body_md: body,
     og_title: withoutModelComment(story.og_title),
     og_description: withoutModelComment(story.og_description),
   };
@@ -96,7 +104,8 @@ export type Magazine = {
 /** Approved stories from the desk. A desk delete drops the story within about 30 seconds. */
 export async function loadMagazine(): Promise<Magazine> {
   try {
-    const res = await fetch(`${DESK}/published/magazine.json`, { next: { revalidate: 30 } });
+    // no-store: magazine can still flirt with Next's 2MB Data Cache ceiling
+    const res = await fetch(`${DESK}/published/magazine.json`, { cache: "no-store" });
     if (!res.ok) return { ...bundled, stories: bundled.stories.map(cleanStory) };
     const data = (await res.json()) as Magazine;
     if (!data?.edition || !Array.isArray(data.stories)) {
@@ -113,6 +122,23 @@ export async function loadMagazine(): Promise<Magazine> {
       stories: bundled.stories.map(cleanStory),
     };
   }
+}
+
+/** Full story body for article pages (magazine index omits body_md). */
+export async function loadStory(slug: string): Promise<Story | undefined> {
+  try {
+    const res = await fetch(`${DESK}/published/stories/${encodeURIComponent(slug)}.json`, {
+      cache: "no-store",
+    });
+    if (res.ok) {
+      const data = (await res.json()) as Story;
+      if (data?.slug) return cleanStory(data);
+    }
+  } catch {
+    /* fall through */
+  }
+  const { stories } = await loadMagazine();
+  return storyBySlug(stories, slug);
 }
 
 export function storyBySlug(stories: Story[], slug: string): Story | undefined {
@@ -170,8 +196,24 @@ export function formatEditionDate(iso: string): string {
   return `${y}年${m}月${d}日`;
 }
 
+function truncateCjk(text: string, maxCjk: number): string {
+  let out = "";
+  let cjk = 0;
+  for (const ch of text) {
+    out += ch;
+    if (/[\u4e00-\u9fff]/.test(ch)) cjk += 1;
+    if (cjk >= maxCjk) {
+      return out.replace(/\s+$/u, "") + "……";
+    }
+  }
+  return out.trim();
+}
+
 /** Longer article teaser from body (dek alone is often one short line). */
 export function storyTeaser(story: Story, maxCjk = 110): string {
+  const ready = (story.teaser || "").trim();
+  if (ready) return truncateCjk(ready, maxCjk);
+
   const raw = story.body_md || "";
   let text = raw.replace(/<!--[\s\S]*?-->/g, "");
   text = text.replace(/^#+\s+.+$/gm, "");

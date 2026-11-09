@@ -3,8 +3,10 @@
 
 Usage (on ECS):
   python scripts/post_facebook.py
-  python scripts/post_facebook.py --lookback-days 14
-  python scripts/post_facebook.py --limit 0   # 0 = no cap (default)
+  python scripts/post_facebook.py --slot morning   # 3 posts
+  python scripts/post_facebook.py --slot noon      # 3 posts
+  python scripts/post_facebook.py --slot evening   # 4 posts
+  python scripts/post_facebook.py --limit 0        # no cap (flood)
 """
 
 from __future__ import annotations
@@ -35,11 +37,17 @@ def main() -> int:
         "--limit",
         type=int,
         default=None,
-        help="Max posts this run; 0 or omit = post all pending (FACEBOOK_MAX_PER_RUN, default 0)",
+        help="Max posts this run. Default: slot quota (morning 3 / noon 3 / evening 4).",
+    )
+    parser.add_argument(
+        "--slot",
+        choices=("morning", "noon", "evening"),
+        default=None,
+        help="Daypart quota (default: infer from HKT clock).",
     )
     parser.add_argument("--lookback-days", type=int, default=None, help="Only stories from the last N days")
     args = parser.parse_args()
-    summary = post_pending(limit=args.limit, lookback_days=args.lookback_days)
+    summary = post_pending(limit=args.limit, lookback_days=args.lookback_days, slot=args.slot)
     print(json.dumps({k: summary[k] for k in summary if k != "results"}, ensure_ascii=False))
     for row in summary.get("results") or []:
         print(json.dumps(row, ensure_ascii=False))

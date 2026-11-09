@@ -493,6 +493,30 @@ Rules:
 - Do not debunk with a government slogan. Do not confirm with a forum post.
 - End with the next fact that would settle it.
 
+### 6.13 城市實用 — City How-To (`city_howto`)
+
+**Purpose:** Steps and comparisons for a job the reader has today — buy, set up, switch, travel, insure.
+
+Prefer **named consumer products** (phone, car, subscription, gear) or felt life friction. Structure: task hook → when it applies → 3–5 steps/compare → close. Never invent prices or schedules; cite official pages.
+
+**Title voice:** tutorial, not news — e.g. `……攻略`、`一文看清：……怎麼做`、`……五步設定`、`……怎麼選`. Avoid 突然／曝光／宣布式報道標題.
+
+### 6.14 熱話解讀 — Hot Explainer (`hot_explainer`)
+
+**Purpose:** Make a circulating commercial heat clear — price cut, shortage, launch, fee hike.
+
+Open with ~80 characters answering “what is this / what does it cost me?” Then what happened, why it matters, what to watch (labeled 可能／未證實).
+
+**Title voice:** `一文看清：……到底怎麼回事`、`……降價，先搞懂這幾點`、`……對照：清貨還是換代` — not breaking-news cadence.
+
+### 6.15 入門熱門 — Popular Entry (`popular_entry`)
+
+**Purpose:** Door-opener for people who don’t usually follow news. Zero jargon. Familiar brand/product in the hook. Three “use / ignore” bullets + one next step. Not 獵奇, not advertorial “必買”.
+
+**Title voice:** `……入門：普通人只看這三項`、`一文看清……是什麼`、`不玩參數的……選購指南`.
+
+**Growth mix on Facebook:** about 2–3 of these formats per day among ~10 posts; at most one growth piece per time slot.
+
 ### Topic interest test
 
 Do not spend a feature on a story that fails this test. A publishable topic needs **at least two**:

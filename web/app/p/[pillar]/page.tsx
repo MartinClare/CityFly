@@ -8,13 +8,9 @@ import {
   storyTeaser,
 } from "@/lib/content";
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 type Props = { params: Promise<{ pillar: string }> };
-
-export function generateStaticParams() {
-  return PILLAR_ORDER.map((pillar) => ({ pillar }));
-}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { edition } = await loadMagazine();

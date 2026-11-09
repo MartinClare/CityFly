@@ -1,6 +1,6 @@
 #!/bin/bash
-# Hourly recrawl. Full article drafts at 07:30, 12:30, and 18:30 HKT.
-# Facebook link posts shortly after each draft window.
+# Hourly recrawl. Full drafts ahead of FB windows.
+# Facebook 10/day @ 07:30 / 12:00 / 18:00 HKT — 3 + 3 + 4 (attractiveness-ranked).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PY="$ROOT/venv/bin/python"
@@ -12,12 +12,13 @@ FB_PY="$ROOT/scripts/post_facebook.py"
 # Linux cron respects CRON_TZ.
 TZ_LINE="CRON_TZ=Asia/Hong_Kong"
 HOURLY="15 * * * * $HOURLY_SH"
-MORNING="30 7 * * * $FULL_SH morning"
-LUNCH="30 12 * * * $FULL_SH noon"
-EVENING="30 18 * * * $FULL_SH evening"
-FB_MORNING="45 8 * * * cd \"$ROOT\" && \"$PY\" scripts/post_facebook.py >> \"$LOG\" 2>&1"
-FB_LUNCH="45 13 * * * cd \"$ROOT\" && \"$PY\" scripts/post_facebook.py >> \"$LOG\" 2>&1"
-FB_EVENING="45 19 * * * cd \"$ROOT\" && \"$PY\" scripts/post_facebook.py >> \"$LOG\" 2>&1"
+# Draft ~45–60 min before each FB slot so approve/export can finish
+MORNING="30 6 * * * $FULL_SH morning"
+LUNCH="0 11 * * * $FULL_SH noon"
+EVENING="0 17 * * * $FULL_SH evening"
+FB_MORNING="30 7 * * * cd \"$ROOT\" && \"$PY\" scripts/post_facebook.py --slot morning >> \"$LOG\" 2>&1"
+FB_LUNCH="0 12 * * * cd \"$ROOT\" && \"$PY\" scripts/post_facebook.py --slot noon >> \"$LOG\" 2>&1"
+FB_EVENING="0 18 * * * cd \"$ROOT\" && \"$PY\" scripts/post_facebook.py --slot evening >> \"$LOG\" 2>&1"
 
 if [[ ! -x "$PY" ]]; then
   echo "Missing venv python at $PY — create venv first." >&2

@@ -346,6 +346,16 @@ async def published_magazine():
     return JSONResponse(payload, headers={"Cache-Control": "public, max-age=30"})
 
 
+@app.get("/published/stories/{slug}.json")
+async def published_story(slug: str):
+    from publish_site import story_payload
+
+    payload = story_payload(slug, hero_base=_desk_public_url())
+    if payload is None:
+        return Response(status_code=404)
+    return JSONResponse(payload, headers={"Cache-Control": "public, max-age=30"})
+
+
 @app.get("/published/images/{name}")
 async def published_image(name: str):
     from publish_site import approved_hero_file
