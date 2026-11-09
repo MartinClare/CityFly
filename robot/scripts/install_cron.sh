@@ -15,9 +15,10 @@ HOURLY="15 * * * * $HOURLY_SH"
 MORNING="30 7 * * * $FULL_SH morning"
 LUNCH="30 12 * * * $FULL_SH noon"
 EVENING="30 18 * * * $FULL_SH evening"
-FB_MORNING="45 8 * * * cd \"$ROOT\" && \"$PY\" scripts/post_facebook.py >> \"$LOG\" 2>&1"
-FB_LUNCH="45 13 * * * cd \"$ROOT\" && \"$PY\" scripts/post_facebook.py >> \"$LOG\" 2>&1"
-FB_EVENING="45 19 * * * cd \"$ROOT\" && \"$PY\" scripts/post_facebook.py >> \"$LOG\" 2>&1"
+# Hard caps per slot — do not omit --limit (default is flood-all pending).
+FB_MORNING="30 7 * * * cd \"$ROOT\" && \"$PY\" scripts/post_facebook.py --limit 3 >> \"$LOG\" 2>&1"
+FB_LUNCH="0 12 * * * cd \"$ROOT\" && \"$PY\" scripts/post_facebook.py --limit 3 >> \"$LOG\" 2>&1"
+FB_EVENING="0 18 * * * cd \"$ROOT\" && \"$PY\" scripts/post_facebook.py --limit 4 >> \"$LOG\" 2>&1"
 
 if [[ ! -x "$PY" ]]; then
   echo "Missing venv python at $PY — create venv first." >&2
